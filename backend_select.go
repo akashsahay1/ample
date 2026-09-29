@@ -1,12 +1,19 @@
 package main
 
 import (
+	"os"
+
 	"ampls/internal/api"
 	"ampls/internal/api/mock"
+	"ampls/internal/core"
 )
 
-// newBackend selects the Backend implementation. Owned by the lead: switch to
-// core.New() (keeping mock.New() when AMPLS_MOCK=1).
+// newBackend returns the real core, or the in-memory mock when AMPLS_MOCK=1
+// (useful for UI work without Apache/MySQL installed).
 func newBackend() api.Backend {
-	return mock.New()
+	if os.Getenv("AMPLS_MOCK") == "1" {
+		return mock.New()
+	}
+	core.Version = version
+	return core.New()
 }
