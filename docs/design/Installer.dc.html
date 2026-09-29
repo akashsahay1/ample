@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AMPLS Setup, data location</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;color:#1B1B1B;background:#F3F3F3}
+.wbtn{height:32px;min-width:88px;padding:0 14px;border-radius:4px;border:1px solid #CFCFCF;background:#FDFDFD;font:400 13px 'Segoe UI',sans-serif;cursor:pointer}
+.wbtn.pri{background:#C2461A;border-color:#A83B14;color:#fff}
+</style>
+</helmet>
+<div style="width: 760px; height: 560px; display: flex; flex-direction: column; background: #FFFFFF; border: 1px solid #CFCFCF; box-sizing: border-box">
+  <div style="height: 32px; display: flex; align-items: center; gap: 8px; padding-left: 10px; font-size: 12px; background: #F3F3F3">
+    <svg viewBox="0 0 256 256" width="16" height="16" aria-hidden="true"><rect width="256" height="256" rx="48" fill="#16181D"></rect><path d="M66 206 L128 50 L190 206" fill="none" stroke="#F5F3EF" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"></path><rect x="92" y="150" width="72" height="28" rx="14" fill="#E8622C"></rect></svg>
+    Setup - AMPLS 1.0.0
+  </div>
+  <div style="display: flex; align-items: center; gap: 16px; padding: 18px 28px; border-bottom: 1px solid #E5E5E5">
+    <div style="flex-grow: 1">
+      <div style="font-size: 15px; font-weight: 600">Select Data Location</div>
+      <div style="font-size: 13px; color: #555; margin-top: 2px">Where should AMPLS keep Apache, PHP versions, MySQL databases and site configs?</div>
+    </div>
+    <svg viewBox="0 0 256 256" width="52" height="52" aria-hidden="true"><rect width="256" height="256" rx="58" fill="#16181D"></rect><path d="M70 200 L128 56 L186 200" fill="none" stroke="#F5F3EF" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"></path><rect x="113" y="129" width="30" height="12" rx="6" fill="#E8622C"></rect><rect x="104" y="151" width="48" height="12" rx="6" fill="#9AA3FF"></rect><rect x="96" y="173" width="64" height="12" rx="6" fill="#3FA9C9"></rect></svg>
+  </div>
+  <div style="flex-grow: 1; padding: 24px 40px; display: flex; flex-direction: column; gap: 14px; font-size: 13px">
+    <p style="margin: 0">Setup will store AMPLS data in the following folder. Keep the path short and without spaces so Apache and MySQL behave.</p>
+    <div style="display: flex; gap: 8px">
+      <label for="dd" style="position: absolute; left: -9999px">Data folder</label>
+      <input id="dd" value="C:\AMPLS" style="flex-grow: 1; height: 30px; border: 1px solid #8A8A8A; border-radius: 3px; padding: 0 8px; font: 400 13px 'Segoe UI', sans-serif">
+      <button class="wbtn">Browse…</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px">
+      <label style="display: flex; align-items: center; gap: 8px"><input type="checkbox" checked>Create a Sites folder at %USERPROFILE%\AMPLS\Sites and park it</label>
+      <label style="display: flex; align-items: center; gap: 8px"><input type="checkbox" checked>Add ampls, php and composer to PATH</label>
+      <label style="display: flex; align-items: center; gap: 8px"><input type="checkbox" checked>Trust the AMPLS local HTTPS certificate</label>
+      <label style="display: flex; align-items: center; gap: 8px"><input type="checkbox">Start AMPLS when Windows starts</label>
+    </div>
+    <span style="flex-grow: 1"></span>
+    <div style="color: #555">At least 1.2 GB of free disk space is required.</div>
+  </div>
+  <div style="display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid #E5E5E5; background: #F3F3F3">
+    <button class="wbtn">&lt; Back</button>
+    <button class="wbtn pri">Next &gt;</button>
+    <button class="wbtn" style="margin-left: 8px">Cancel</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":760,"height":560}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

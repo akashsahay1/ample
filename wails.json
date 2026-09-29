@@ -1,0 +1,20 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "AMPLS",
+  "outputfilename": "AMPLS",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "Akash Sahay",
+    "email": "akash.sahay1@gmail.com"
+  },
+  "info": {
+    "companyName": "AMPLS",
+    "productName": "AMPLS",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright (c) 2026 Akash Sahay",
+    "comments": "Apache, MySQL, PHP - Latest Software"
+  }
+}
