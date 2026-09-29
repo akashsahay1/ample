@@ -1,0 +1,5 @@
+{
+	"apiPort": 9001,
+	"basePhpPort": 9000,
+	"activeVersion": "8.5"
+}

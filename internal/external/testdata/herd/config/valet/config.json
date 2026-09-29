@@ -1,0 +1,10 @@
+{
+    "tld": "test",
+    "loopback": "127.0.0.1",
+    "paths": [
+        "C:\\Users\\user\\.config\\herd\\config\\valet\\Sites",
+        "{{ROOT}}\\Herd",
+        "{{ROOT}}\\Missing"
+    ],
+    "share-tool": "expose"
+}
