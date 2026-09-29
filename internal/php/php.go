@@ -43,7 +43,11 @@ func List() ([]Installed, error) {
 			continue
 		}
 		minor := e.Name()
+		// A version counts only when both binaries exist (a half-extracted dir does not).
 		if _, err := os.Stat(CLIPath(minor)); err != nil {
+			continue
+		}
+		if _, err := os.Stat(CGIPath(minor)); err != nil {
 			continue
 		}
 		out = append(out, Installed{Minor: minor, Full: fullVersion(minor), Dir: paths.PHPDir(minor)})

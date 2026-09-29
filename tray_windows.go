@@ -31,9 +31,9 @@ func trayReady(app *App) {
 
 	systray.AddMenuItem("Open AMPLS", "Show the AMPLS window").Click(app.ShowWindow)
 	systray.AddSeparator()
-	systray.AddMenuItem("Start all", "Start Apache and MySQL").Click(func() { go app.StartAll() })
-	systray.AddMenuItem("Stop all", "Stop Apache and MySQL").Click(func() { go app.StopAll() })
-	systray.AddMenuItem("Restart all", "Restart Apache and MySQL").Click(func() { go app.RestartAll() })
+	systray.AddMenuItem("Start all", "Start Apache and MySQL").Click(func() { go func() { app.notifyError(app.StartAll()) }() })
+	systray.AddMenuItem("Stop all", "Stop Apache and MySQL").Click(func() { go func() { app.notifyError(app.StopAll()) }() })
+	systray.AddMenuItem("Restart all", "Restart Apache and MySQL").Click(func() { go func() { app.notifyError(app.RestartAll()) }() })
 	systray.AddSeparator()
 	systray.AddMenuItem("Open Sites folder", "").Click(func() {
 		if s, err := app.b.GetSettings(); err == nil && len(s.Parked) > 0 {
@@ -42,7 +42,7 @@ func trayReady(app *App) {
 	})
 	systray.AddMenuItem("phpMyAdmin", "Open phpMyAdmin in the browser").Click(func() {
 		if app.ctx != nil {
-			app.OpenURL("http://localhost/phpmyadmin")
+			app.OpenURL(app.phpMyAdminURL())
 		}
 	})
 	systray.AddSeparator()

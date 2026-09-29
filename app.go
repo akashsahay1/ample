@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"sync/atomic"
 
 	"ampls/internal/api"
@@ -24,10 +25,28 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	if s, err := a.b.GetSettings(); err == nil && s.StartServicesOnLaunch {
 		go func() {
-			_ = a.b.StartAll()
+			a.notifyError(a.b.StartAll())
 			a.emitStatus()
 		}()
 	}
+}
+
+// NoticeTask is the progress task the frontend turns into an error toast for
+// actions it did not start itself (launch-time start, tray menu).
+const NoticeTask = "notice"
+
+func (a *App) notifyError(err error) {
+	if err != nil {
+		a.emitProgress(api.Progress{Task: NoticeTask, Done: true, Percent: 100, Error: err.Error()})
+	}
+}
+
+// phpMyAdminURL honours a non-default HTTP port.
+func (a *App) phpMyAdminURL() string {
+	if s, err := a.b.GetSettings(); err == nil && s.HTTPPort != 0 && s.HTTPPort != 80 {
+		return fmt.Sprintf("http://localhost:%d/phpmyadmin", s.HTTPPort)
+	}
+	return "http://localhost/phpmyadmin"
 }
 
 func (a *App) beforeClose(ctx context.Context) (prevent bool) {

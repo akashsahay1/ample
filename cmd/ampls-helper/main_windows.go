@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -64,6 +65,8 @@ func main() {
 	}
 }
 
+// absHome validates --home. The service's --home is fixed in the SCM service
+// config at install time (admin only); it must be an absolute local path.
 func absHome(home string) (string, error) {
 	if home == "" {
 		return "", errors.New("--home is required")
@@ -72,7 +75,10 @@ func absHome(home string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return h, nil
+	if strings.HasPrefix(h, `\\`) || filepath.VolumeName(h) == "" {
+		return "", fmt.Errorf("--home must be a local absolute path, got %q", home)
+	}
+	return filepath.Clean(h), nil
 }
 
 func install(home string) error {
@@ -165,20 +171,25 @@ func uninstall() error {
 	return nil
 }
 
-// setupLog writes to %ProgramData%\AMPLS\ampls-helper.log (admin-owned, so a
-// user cannot redirect our LocalSystem writes via links in the data dir).
+// setupLog writes ampls-helper.log next to the service binary (the admin-only
+// install dir, e.g. C:\Program Files\AMPLS\bin). Not %ProgramData%\AMPLS:
+// any user can pre-create that folder (ProgramData grants Users "create
+// folders") and plant a link there, turning our LocalSystem log writes and the
+// .old rename into an arbitrary-file write. If the binary's own directory were
+// user-writable the service would be hijackable anyway.
 func setupLog() {
-	pd := os.Getenv("ProgramData")
-	if pd == "" {
+	exe, err := os.Executable()
+	if err != nil {
 		return
 	}
-	dir := filepath.Join(pd, "AMPLS")
-	if os.MkdirAll(dir, 0o755) != nil {
-		return
-	}
-	p := filepath.Join(dir, "ampls-helper.log")
-	if st, err := os.Stat(p); err == nil && st.Size() > 1<<20 {
-		_ = os.Rename(p, p+".old")
+	p := filepath.Join(filepath.Dir(exe), "ampls-helper.log")
+	if st, err := os.Lstat(p); err == nil {
+		if !st.Mode().IsRegular() {
+			return // never follow a link
+		}
+		if st.Size() > 1<<20 {
+			_ = os.Rename(p, p+".old")
+		}
 	}
 	if f, err := os.OpenFile(p, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644); err == nil {
 		log.SetOutput(f)

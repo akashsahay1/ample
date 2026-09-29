@@ -1,5 +1,5 @@
 import {createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState} from 'react'
-import {backend, errMsg, hasBackend, onStatus, Overview} from '../lib/api'
+import {backend, errMsg, hasBackend, onProgress, onStatus, Overview} from '../lib/api'
 
 export type Route = 'dashboard' | 'sites' | 'php' | 'mysql' | 'logs' | 'settings'
 
@@ -121,14 +121,19 @@ export function AppProvider({children}: {children: ReactNode}) {
       refresh()
       setTick(t => t + 1)
     })
+    // errors from actions the UI did not start (launch-time service start, tray menu)
+    const offNotice = onProgress(p => {
+      if (p.task === 'notice' && p.error) toast('error', p.error)
+    })
     const onVis = () => document.visibilityState === 'visible' && refresh()
     document.addEventListener('visibilitychange', onVis)
     return () => {
       window.clearInterval(id)
       off()
+      offNotice()
       document.removeEventListener('visibilitychange', onVis)
     }
-  }, [refresh])
+  }, [refresh, toast])
 
   return (
     <Ctx.Provider

@@ -158,8 +158,11 @@ func (c *Core) newProject(req api.NewProjectRequest, report func(api.Progress)) 
 	if ver == "" {
 		ver = defaultPHP(cfg)
 	}
-	if ver == "" || !phpInstalled(ver) {
-		return api.Site{}, errors.New("no PHP version is installed")
+	if ver == "" {
+		return api.Site{}, errors.New("no PHP version is installed: install one from PHP Versions first")
+	}
+	if !phpInstalled(ver) {
+		return api.Site{}, fmt.Errorf("PHP %s is not installed", ver)
 	}
 
 	pr := projects.Request{
@@ -323,6 +326,15 @@ func (c *Core) Setup(opts SetupOptions, log func(string)) error {
 	if err := paths.EnsureDirs(); err != nil {
 		return err
 	}
+	// An upgrade may have replaced the bundled PHP binaries in place: drop the
+	// cached full-version files so php.List re-reads them.
+	if entries, err := os.ReadDir(paths.PHPRoot()); err == nil {
+		for _, e := range entries {
+			if e.IsDir() {
+				_ = os.Remove(filepath.Join(paths.PHPRoot(), e.Name(), php.VersionFile))
+			}
+		}
+	}
 	inst, err := php.List()
 	if err != nil {
 		return err
@@ -384,7 +396,9 @@ func (c *Core) Setup(opts SetupOptions, log func(string)) error {
 	}
 	if _, err := os.Stat(apache.HttpdPath()); err == nil {
 		log("Writing Apache configuration")
-		if err := c.sync(false); err != nil {
+		// Hosts are written directly below; hosts.Request would wait for the
+		// helper service, which the installer only registers after setup.
+		if err := c.syncOpts(false, false); err != nil {
 			return err
 		}
 	}

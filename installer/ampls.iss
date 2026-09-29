@@ -83,17 +83,21 @@ Name: "{autoprograms}\AMPLS"; Filename: "{app}\{#AppExe}"
 Name: "{autodesktop}\AMPLS"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "AMPLS"; ValueData: """{app}\{#AppExe}"""; Tasks: autostart; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "AMPLS"; ValueData: """{app}\{#AppExe}"" --hidden"; Tasks: autostart; Flags: uninsdeletevalue
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "Launch AMPLS"; Flags: postinstall nowait skipifsilent runasoriginaluser
 
 [UninstallRun]
+; close the tray app first so AMPLS.exe can be deleted (it would otherwise keep running)
+Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM {#AppExe}"; Flags: runhidden waituntilterminated; RunOnceId: "CloseApp"
 Filename: "{app}\bin\ampls.exe"; Parameters: "stop"; Flags: runhidden waituntilterminated skipifdoesntexist; RunOnceId: "StopServices"
 Filename: "{app}\bin\ampls.exe"; Parameters: "hosts clear"; Flags: runhidden waituntilterminated skipifdoesntexist; RunOnceId: "ClearHosts"
 Filename: "{sys}\sc.exe"; Parameters: "stop {#HelperService}"; Flags: runhidden waituntilterminated; RunOnceId: "StopHelper"
 Filename: "{app}\bin\ampls-helper.exe"; Parameters: "uninstall"; Flags: runhidden waituntilterminated skipifdoesntexist; RunOnceId: "RemoveHelper"
 Filename: "{sys}\certutil.exe"; Parameters: "-delstore Root ""AMPLS Local CA"""; Flags: runhidden waituntilterminated; RunOnceId: "UntrustCA"
+; the GUI's "Trust HTTPS certificate" adds it to the current user's store
+Filename: "{sys}\certutil.exe"; Parameters: "-user -delstore Root ""AMPLS Local CA"""; Flags: runhidden waituntilterminated; RunOnceId: "UntrustCAUser"
 
 [UninstallDelete]
 Type: files; Name: "{app}\data-dir.txt"

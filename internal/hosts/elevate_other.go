@@ -32,5 +32,5 @@ func elevateApply() error {
 }
 
 func flushDNS() {
-	_ = exec.Command("dscacheutil", "-flushcache").Run()
+	_ = exec.Command("/usr/bin/dscacheutil", "-flushcache").Run()
 }

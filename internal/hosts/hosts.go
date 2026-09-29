@@ -193,9 +193,21 @@ func Validate(domains []string, tld string) error {
 	return nil
 }
 
-// validateAny validates domains whatever their TLD (used by Apply as a last line
-// of defence so nothing but strict host names ever reaches the hosts file).
-func validateAny(domains []string) error {
+// AllowedTLDs are the only TLDs AMPLS ever writes to the system hosts file.
+// They are fixed here, not read from config.json or run/hosts.json: both live
+// in the user-writable data directory, and the hosts file is machine-wide and
+// written with admin/LocalSystem rights. Both are reserved names (RFC 2606 /
+// RFC 6761) that can never be real internet domains, so a non-admin user or
+// malware cannot use AMPLS to redirect e.g. windowsupdate.com.
+var AllowedTLDs = map[string]bool{"test": true, "localhost": true}
+
+// TLDAllowed reports whether tld is one of AllowedTLDs.
+func TLDAllowed(tld string) bool { return AllowedTLDs[tld] }
+
+// validateAllowed validates every domain against the fixed AllowedTLDs (used by
+// Apply and the privileged paths so nothing but strict *.test / *.localhost
+// host names ever reaches the hosts file, whatever a request claims its TLD is).
+func validateAllowed(domains []string) error {
 	if len(domains) > MaxDomains {
 		return fmt.Errorf("hosts: too many domains (%d > %d)", len(domains), MaxDomains)
 	}
@@ -204,7 +216,11 @@ func validateAny(domains []string) error {
 		if i < 0 {
 			return fmt.Errorf("hosts: invalid domain %q", d)
 		}
-		if err := Validate([]string{d}, d[i+1:]); err != nil {
+		tld := d[i+1:]
+		if !AllowedTLDs[tld] {
+			return fmt.Errorf("hosts: domain %q: only .test and .localhost names may be written to the hosts file", d)
+		}
+		if err := Validate([]string{d}, tld); err != nil {
 			return err
 		}
 	}
@@ -244,10 +260,11 @@ func Current() ([]string, error) {
 	return parseBlock(string(b)), nil
 }
 
-// Apply writes the managed block directly (requires admin rights).
+// Apply writes the managed block directly (requires admin rights). Only
+// domains under AllowedTLDs are accepted.
 func Apply(domains []string) error {
 	domains = normalize(domains)
-	if err := validateAny(domains); err != nil {
+	if err := validateAllowed(domains); err != nil {
 		return err
 	}
 	p := HostsPath()
@@ -365,6 +382,9 @@ func writeApplied(runDir string, r AppliedResult) error {
 // `ampls.exe hosts apply`.
 func Request(domains []string, tld string) error {
 	domains = normalize(domains)
+	if !AllowedTLDs[tld] {
+		return fmt.Errorf("hosts: tld %q is not supported (only .test and .localhost can be added to the hosts file)", tld)
+	}
 	if err := Validate(domains, tld); err != nil {
 		return err
 	}
@@ -412,24 +432,27 @@ func Request(domains []string, tld string) error {
 
 // ApplyPending reads run/hosts.json, validates it and applies it, recording
 // the outcome in run/hosts.applied.json. It is what `ampls hosts apply` (run
-// elevated) calls.
+// elevated) calls. The request file is user-writable, so its "tld" field is
+// ignored and every domain is checked against the fixed AllowedTLDs.
 func ApplyPending() error {
-	return applyPending(paths.RunDir(), "")
+	return applyPending(paths.RunDir())
 }
 
-// applyPending: when requiredTLD != "" the request's TLD must match it.
-func applyPending(runDir, requiredTLD string) error {
+func applyPending(runDir string) error {
 	req, err := readPending(runDir)
 	if err != nil {
 		return err
 	}
+	return applyRequest(runDir, req)
+}
+
+// applyRequest validates and applies an already-read request and records the
+// outcome in runDir.
+func applyRequest(runDir string, req PendingRequest) error {
 	res := AppliedResult{Domains: normalize(req.Domains), RequestedAt: req.RequestedAt}
-	err = func() error {
-		if requiredTLD != "" && req.TLD != requiredTLD {
-			return fmt.Errorf("hosts: tld %q does not match configured tld %q", req.TLD, requiredTLD)
-		}
-		if err := Validate(res.Domains, req.TLD); err != nil {
-			return err
+	err := func() error {
+		if len(req.Domains) > MaxDomains {
+			return fmt.Errorf("hosts: too many domains (%d > %d)", len(req.Domains), MaxDomains)
 		}
 		return Apply(res.Domains)
 	}()

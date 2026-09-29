@@ -3,6 +3,7 @@ package shim
 
 import (
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -47,11 +48,13 @@ func ResolveVersion(cwd string) (minor string, source string, err error) {
 			}
 		}
 		if pinned { // only walk the sites when some site is isolated (keeps the shim fast)
-			if s, ok := sites.FindByPath(cfg, cwd); ok && s.Isolated && s.PHP != "" {
+			// config.json is user-editable: only accept a strict "<major>.<minor>"
+			// so the version can never become a path ("../../evil").
+			if s, ok := sites.FindByPath(cfg, cwd); ok && s.Isolated && minorRe.MatchString(s.PHP) {
 				return s.PHP, "site " + s.Domain, nil
 			}
 		}
-		if cfg.DefaultPHP != "" && installed(cfg.DefaultPHP) {
+		if minorRe.MatchString(cfg.DefaultPHP) && installed(cfg.DefaultPHP) {
 			return cfg.DefaultPHP, "default", nil
 		}
 	}
@@ -64,7 +67,7 @@ func ResolveVersion(cwd string) (minor string, source string, err error) {
 func findVersionFile(dir string) (version, file string) {
 	for {
 		p := filepath.Join(dir, VersionFile)
-		if b, err := os.ReadFile(p); err == nil {
+		if b, err := readHead(p, 64); err == nil {
 			line := strings.TrimSpace(strings.SplitN(strings.TrimPrefix(string(b), "\xef\xbb\xbf"), "\n", 2)[0])
 			if minorRe.MatchString(line) {
 				return line, p
@@ -78,7 +81,28 @@ func findVersionFile(dir string) (version, file string) {
 	}
 }
 
+// readHead reads at most n bytes of a regular file (a .ampls-php from an
+// untrusted checkout could be huge or a device/pipe).
+func readHead(p string, n int64) ([]byte, error) {
+	st, err := os.Stat(p)
+	if err != nil {
+		return nil, err
+	}
+	if !st.Mode().IsRegular() {
+		return nil, os.ErrInvalid
+	}
+	f, err := os.Open(p)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	return io.ReadAll(io.LimitReader(f, n))
+}
+
 func installed(minor string) bool {
+	if !minorRe.MatchString(minor) {
+		return false
+	}
 	_, err := os.Stat(filepath.Join(paths.PHPDir(minor), paths.Exe("php")))
 	return err == nil
 }

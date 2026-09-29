@@ -103,4 +103,19 @@ func TestResolveVersion(t *testing.T) {
 	if v, _, _ = ResolveVersion(site); v != "8.9" {
 		t.Fatalf("garbage file: %s", v)
 	}
+	// path traversal attempts never become the version
+	for _, bad := range []string{"../../evil", "..\\..\\evil", "8.3/../../x", "C:\\evil", "8.3\x00"} {
+		os.WriteFile(filepath.Join(site, VersionFile), []byte(bad), 0o644)
+		if v, _, _ = ResolveVersion(site); v != "8.9" {
+			t.Fatalf("traversal %q: %s", bad, v)
+		}
+	}
+	os.Remove(filepath.Join(site, VersionFile))
+	// ...nor via the (user-editable) config
+	cfg["sites"] = map[string]any{"blog": map[string]any{"php": "../../evil"}}
+	cfg["defaultPhp"] = "../8.2"
+	writeConfig(t, cfg)
+	if v, _, _ = ResolveVersion(site); v != "8.10" {
+		t.Fatalf("config traversal: %s", v)
+	}
 }

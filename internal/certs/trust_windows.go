@@ -5,9 +5,6 @@ package certs
 import (
 	"crypto/sha1"
 	"fmt"
-	"os/exec"
-	"strings"
-	"syscall"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -51,19 +48,40 @@ func inRootStore(location uint32, thumb []byte) bool {
 
 // TrustCA adds the CA to the Root store: machine-wide (requires admin; used by
 // the installer) or for the current user (Windows shows a confirmation dialog).
+//
+// The certificate is read and checked once (it must match ca.key and carry the
+// AMPLS name constraints) and those exact bytes are added through CryptoAPI.
+// Shelling out to `certutil -addstore Root <Home>\certs\ca.crt` would let any
+// local user (the data dir is user-writable) swap ca.crt for their own
+// unconstrained CA between the check and the elevated certutil run.
 func TrustCA(machine bool) error {
 	if err := EnsureCA(); err != nil {
 		return err
 	}
-	args := []string{"-addstore", "-f", "Root", CAPath()}
-	if !machine {
-		args = append([]string{"-user"}, args...)
-	}
-	cmd := exec.Command("certutil", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: windows.CREATE_NO_WINDOW}
-	out, err := cmd.CombinedOutput()
+	c, _, err := LoadCA()
 	if err != nil {
-		return fmt.Errorf("certs: certutil %s: %w: %s", strings.Join(args, " "), err, strings.TrimSpace(string(out)))
+		return fmt.Errorf("certs: trust: %w", err)
+	}
+	if !constrained(c) {
+		return fmt.Errorf("certs: trust: refusing to trust a CA without the AMPLS name constraints")
+	}
+	loc := uint32(windows.CERT_SYSTEM_STORE_CURRENT_USER)
+	if machine {
+		loc = windows.CERT_SYSTEM_STORE_LOCAL_MACHINE
+	}
+	name, _ := windows.UTF16PtrFromString("Root")
+	store, err := windows.CertOpenStore(windows.CERT_STORE_PROV_SYSTEM, 0, 0, loc, uintptr(unsafe.Pointer(name)))
+	if err != nil {
+		return fmt.Errorf("certs: open Root store: %w", err)
+	}
+	defer windows.CertCloseStore(store, 0)
+	ctx, err := windows.CertCreateCertificateContext(windows.X509_ASN_ENCODING|windows.PKCS_7_ASN_ENCODING, &c.Raw[0], uint32(len(c.Raw)))
+	if err != nil {
+		return fmt.Errorf("certs: trust: %w", err)
+	}
+	defer windows.CertFreeCertificateContext(ctx)
+	if err := windows.CertAddCertificateContextToStore(store, ctx, windows.CERT_STORE_ADD_REPLACE_EXISTING, nil); err != nil {
+		return fmt.Errorf("certs: add CA to the Root store (dialog declined?): %w", err)
 	}
 	if !IsCATrusted() {
 		return fmt.Errorf("certs: CA was not added to the trust store (dialog declined?)")

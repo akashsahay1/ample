@@ -22,6 +22,11 @@ export function slug(s: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+/** phpMyAdmin URL honouring a non-default Apache HTTP port. */
+export function phpMyAdminURL(httpPort?: number): string {
+  return `http://localhost${httpPort && httpPort !== 80 ? `:${httpPort}` : ''}/phpmyadmin`
+}
+
 export function frameworkLabel(fw: string): string {
   switch (fw) {
     case 'laravel':

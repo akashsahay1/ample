@@ -15,5 +15,7 @@ func newBackend() api.Backend {
 		return mock.New()
 	}
 	core.Version = version
-	return core.New()
+	c := core.New()
+	c.BackgroundSync = true // the GUI is long-running: apply new parked folders automatically
+	return c
 }

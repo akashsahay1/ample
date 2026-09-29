@@ -190,14 +190,25 @@ export default function NewProjectModal({onClose}: {onClose: () => void}) {
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Location">
-            <select className="input mono" value={dir} onChange={e => setDir(e.target.value)}>
-              {parked.map(p => (
-                <option key={p} value={p}>
-                  {shortPath(p)}
-                </option>
-              ))}
-              {dir && !parked.includes(dir) && <option value={dir}>{shortPath(dir)}</option>}
-            </select>
+            <div className="flex gap-2">
+              <select className="input mono min-w-0 grow" value={dir} onChange={e => setDir(e.target.value)}>
+                {!dir && <option value="">Choose a folder…</option>}
+                {parked.map(p => (
+                  <option key={p} value={p}>
+                    {shortPath(p)}
+                  </option>
+                ))}
+                {dir && !parked.includes(dir) && <option value={dir}>{shortPath(dir)}</option>}
+              </select>
+              <Button
+                onClick={async () => {
+                  const d = await run(() => backend.SelectDirectory('Create the project in…'))
+                  if (d) setDir(d)
+                }}
+              >
+                Browse…
+              </Button>
+            </div>
           </Field>
           <Field label="PHP version">
             <select className="input mono" value={php} onChange={e => setPhp(e.target.value)}>

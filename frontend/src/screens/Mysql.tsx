@@ -1,7 +1,7 @@
 import {useState} from 'react'
 import {Database as DbIcon, Download, Trash2, Upload} from 'lucide-react'
 import {backend, Database, MySQLInfo} from '../lib/api'
-import {bytes, copyText} from '../lib/format'
+import {bytes, copyText, phpMyAdminURL} from '../lib/format'
 import {useApp} from '../state/AppState'
 import {useLoad} from '../state/useLoad'
 import {Badge, Button, Empty, Field, IconButton, Modal, PageHeader} from '../components/ui'
@@ -176,7 +176,7 @@ export default function Mysql() {
         ) : (
           <Button onClick={() => run(() => backend.StartService('mysql'), 'MySQL started')}>Start</Button>
         )}
-        <Button variant="primary" onClick={() => backend.OpenURL('http://localhost/phpmyadmin')}>
+        <Button variant="primary" onClick={() => backend.OpenURL(phpMyAdminURL(overview?.services.find(s => s.name === 'apache')?.ports?.[0]))}>
           Open phpMyAdmin
         </Button>
       </PageHeader>

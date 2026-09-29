@@ -1,7 +1,7 @@
 import {ReactNode} from 'react'
 import {FolderOpen, Lock, LockOpen, Plus, ShieldCheck, SquareTerminal} from 'lucide-react'
 import {backend, ServiceStatus, Site} from '../lib/api'
-import {shortPath} from '../lib/format'
+import {phpMyAdminURL, shortPath} from '../lib/format'
 import {useApp} from '../state/AppState'
 import {useLoad} from '../state/useLoad'
 import {Badge, Button, Empty, PageHeader, ServiceIcon} from '../components/ui'
@@ -138,7 +138,7 @@ export default function Dashboard() {
             <>
               <Button onClick={() => run(() => backend.RestartService('mysql'), 'MySQL restarted')}>Restart</Button>
               <ServiceToggle s={mysql} />
-              <Button onClick={() => backend.OpenURL('http://localhost/phpmyadmin')}>phpMyAdmin</Button>
+              <Button onClick={() => backend.OpenURL(phpMyAdminURL(apache?.ports?.[0]))}>phpMyAdmin</Button>
             </>
           }
         />

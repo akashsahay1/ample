@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"net"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -31,6 +32,51 @@ const (
 )
 
 var mu sync.Mutex
+
+// CAName is the CA certificate's exact Common Name.
+const CAName = "AMPLS Local CA"
+
+// PermittedDomains are the DNS name constraints of the CA: a constraint of
+// "test" matches test and every name below it (RFC 5280 4.2.1.10).
+var PermittedDomains = []string{"test", "localhost"}
+
+func permittedIPRanges() []*net.IPNet {
+	return []*net.IPNet{
+		{IP: net.IPv4(127, 0, 0, 0).To4(), Mask: net.CIDRMask(8, 32)},
+		{IP: net.IPv6loopback, Mask: net.CIDRMask(128, 128)},
+	}
+}
+
+// permitted reports whether domain is inside PermittedDomains.
+func permitted(domain string) bool {
+	for _, p := range PermittedDomains {
+		if domain == p || strings.HasSuffix(domain, "."+p) {
+			return true
+		}
+	}
+	return false
+}
+
+// constrained reports whether c carries the name and EKU constraints ensureCA
+// puts on a new CA.
+func constrained(c *x509.Certificate) bool {
+	if !c.PermittedDNSDomainsCritical || len(c.PermittedIPRanges) == 0 || !c.MaxPathLenZero {
+		return false
+	}
+	if len(c.ExtKeyUsage) != 1 || c.ExtKeyUsage[0] != x509.ExtKeyUsageServerAuth {
+		return false
+	}
+	have := map[string]bool{}
+	for _, d := range c.PermittedDNSDomains {
+		have[d] = true
+	}
+	for _, d := range PermittedDomains {
+		if !have[d] {
+			return false
+		}
+	}
+	return len(c.PermittedDNSDomains) == len(PermittedDomains)
+}
 
 // CAPath is the PEM CA certificate (certs/ca.crt).
 func CAPath() string { return filepath.Join(paths.CertsDir(), "ca.crt") }
@@ -67,15 +113,54 @@ func serial() (*big.Int, error) {
 	return rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 127))
 }
 
-func writePEM(path, typ string, der []byte, perm os.FileMode) error {
+// writePEM writes a public PEM file via a fresh, exclusively created temp file
+// (never following a link planted at a predictable name) and a rename.
+func writePEM(path, typ string, der []byte) error {
+	return writeAtomic(path, pem.EncodeToMemory(&pem.Block{Type: typ, Bytes: der}), false)
+}
+
+// writeSecretPEM writes a private key readable only by the current user,
+// SYSTEM and Administrators (a protected DACL on Windows, 0600 elsewhere). The
+// data directory is writable by all local users, so the inherited ACL must
+// not be used for keys.
+func writeSecretPEM(path, typ string, der []byte) error {
+	return writeAtomic(path, pem.EncodeToMemory(&pem.Block{Type: typ, Bytes: der}), true)
+}
+
+func writeAtomic(path string, data []byte, secret bool) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, pem.EncodeToMemory(&pem.Block{Type: typ, Bytes: der}), perm); err != nil {
+	var f *os.File
+	var err error
+	for i := 0; i < 10; i++ {
+		var suffix [8]byte
+		if _, err = rand.Read(suffix[:]); err != nil {
+			return err
+		}
+		tmp := fmt.Sprintf("%s.%x.tmp", path, suffix)
+		if f, err = createExclusive(tmp, secret); err == nil || !errors.Is(err, os.ErrExist) {
+			break
+		}
+	}
+	if err != nil {
 		return err
 	}
-	return os.Rename(tmp, path)
+	tmp := f.Name()
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		os.Remove(tmp)
+		return err
+	}
+	if err := f.Close(); err != nil {
+		os.Remove(tmp)
+		return err
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		os.Remove(tmp)
+		return err
+	}
+	return nil
 }
 
 func readCert(path string) (*x509.Certificate, error) {
@@ -148,7 +233,9 @@ func EnsureCA() error {
 }
 
 func ensureCA() error {
-	if c, _, err := LoadCA(); err == nil && c.IsCA && time.Until(c.NotAfter) > renewBefore {
+	// An existing CA without the name/EKU constraints (created by an older
+	// build) is replaced; it then has to be trusted again.
+	if c, _, err := LoadCA(); err == nil && c.IsCA && time.Until(c.NotAfter) > renewBefore && constrained(c) {
 		return nil
 	}
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -160,10 +247,15 @@ func ensureCA() error {
 		return err
 	}
 	now := time.Now()
-	name := "AMPLS Local CA " + username()
 	tpl := &x509.Certificate{
-		SerialNumber:          sn,
-		Subject:               pkix.Name{CommonName: name, Organization: []string{"AMPLS local development CA"}},
+		SerialNumber: sn,
+		// The CN is exactly CAName so the uninstaller can remove it with
+		// `certutil -delstore Root "AMPLS Local CA"`; the user goes in the OU.
+		Subject: pkix.Name{
+			CommonName:         CAName,
+			Organization:       []string{"AMPLS local development CA"},
+			OrganizationalUnit: []string{username()},
+		},
 		NotBefore:             now.Add(-time.Hour),
 		NotAfter:              now.Add(caValidity),
 		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign | x509.KeyUsageDigitalSignature,
@@ -171,6 +263,13 @@ func ensureCA() error {
 		IsCA:                  true,
 		MaxPathLen:            0,
 		MaxPathLenZero:        true,
+		// Constrain the CA so a leaked ca.key (it lives in the data directory)
+		// can only mint TLS server certificates for *.test / localhost, never
+		// for real sites or for code signing.
+		ExtKeyUsage:                 []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		PermittedDNSDomainsCritical: true,
+		PermittedDNSDomains:         PermittedDomains,
+		PermittedIPRanges:           permittedIPRanges(),
 	}
 	der, err := x509.CreateCertificate(rand.Reader, tpl, tpl, &key.PublicKey, key)
 	if err != nil {
@@ -180,10 +279,10 @@ func ensureCA() error {
 	if err != nil {
 		return err
 	}
-	if err := writePEM(CAKeyPath(), "PRIVATE KEY", kder, 0o600); err != nil {
+	if err := writeSecretPEM(CAKeyPath(), "PRIVATE KEY", kder); err != nil {
 		return fmt.Errorf("certs: write CA key: %w", err)
 	}
-	if err := writePEM(CAPath(), "CERTIFICATE", der, 0o644); err != nil {
+	if err := writePEM(CAPath(), "CERTIFICATE", der); err != nil {
 		return fmt.Errorf("certs: write CA: %w", err)
 	}
 	return nil
@@ -196,6 +295,9 @@ func EnsureSiteCert(domain string) (certFile, keyFile string, err error) {
 	domain = strings.ToLower(strings.TrimSpace(domain))
 	if len(domain) > 253 || !domainRe.MatchString(domain) {
 		return "", "", fmt.Errorf("certs: invalid domain %q", domain)
+	}
+	if !permitted(domain) {
+		return "", "", fmt.Errorf("certs: %q is outside the local CA's permitted names (%s)", domain, strings.Join(PermittedDomains, ", "))
 	}
 	mu.Lock()
 	defer mu.Unlock()
@@ -241,10 +343,10 @@ func EnsureSiteCert(domain string) (certFile, keyFile string, err error) {
 	if err != nil {
 		return "", "", err
 	}
-	if err := writePEM(keyFile, "PRIVATE KEY", kder, 0o600); err != nil {
+	if err := writeSecretPEM(keyFile, "PRIVATE KEY", kder); err != nil {
 		return "", "", fmt.Errorf("certs: write key: %w", err)
 	}
-	if err := writePEM(certFile, "CERTIFICATE", der, 0o644); err != nil {
+	if err := writePEM(certFile, "CERTIFICATE", der); err != nil {
 		return "", "", fmt.Errorf("certs: write cert: %w", err)
 	}
 	return certFile, keyFile, nil

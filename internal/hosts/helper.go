@@ -2,7 +2,7 @@ package hosts
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -12,30 +12,6 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-// helperTLDs are the only TLDs the privileged helper will write. They are all
-// reserved / non-public, so a non-admin user cannot use the helper to hijack
-// real internet names machine-wide. Other TLDs still work via UAC elevation.
-var helperTLDs = map[string]bool{
-	"test": true, "localhost": true, "local": true, "internal": true,
-	"lan": true, "home": true, "example": true, "invalid": true,
-	"corp": true, "localdev": true,
-}
-
-// configuredTLD reads the tld from <home>/config.json ("test" by default).
-func configuredTLD(home string) string {
-	b, err := readRegular(filepath.Join(home, "config.json"))
-	if err != nil {
-		return "test"
-	}
-	var c struct {
-		TLD string `json:"tld"`
-	}
-	if json.Unmarshal(b, &c) != nil || c.TLD == "" {
-		return "test"
-	}
-	return c.TLD
-}
-
 // RunHelper runs the hosts helper loop until the process exits.
 func RunHelper(home string) error {
 	return RunHelperContext(context.Background(), home)
@@ -43,34 +19,61 @@ func RunHelper(home string) error {
 
 // RunHelperContext watches <home>/run/hosts.json (fsnotify plus a 2s poll) and
 // applies validated requests until ctx is cancelled.
+//
+// Everything under home is writable by unprivileged users, so the helper
+// treats it as untrusted input: it never reads the TLD from config.json or the
+// request (only the fixed AllowedTLDs are written), reads the request with a
+// size cap and without following links, and pins the run directory (refusing
+// junctions/symlinks anywhere in its path) while it reads the request and
+// writes run/hosts.applied.json, so its LocalSystem writes cannot be
+// redirected elsewhere.
 func RunHelperContext(ctx context.Context, home string) error {
-	if home == "" {
-		return fmt.Errorf("hosts helper: home not set")
+	if home == "" || !filepath.IsAbs(home) {
+		return fmt.Errorf("hosts helper: home must be an absolute path (got %q)", home)
 	}
+	home = filepath.Clean(home)
 	runDir := filepath.Join(home, "run")
-	if err := os.MkdirAll(runDir, 0o755); err != nil {
-		return fmt.Errorf("hosts helper: %w", err)
+	if release, err := lockDir(home); err == nil {
+		if _, err := os.Lstat(runDir); errors.Is(err, os.ErrNotExist) {
+			_ = os.Mkdir(runDir, 0o755)
+		}
+		release()
+	} else {
+		log.Printf("ampls-helper: %v", err)
 	}
 	var last time.Time
-	if a, err := readApplied(runDir); err == nil {
-		last = a.RequestedAt
+	if release, err := lockDir(runDir); err == nil {
+		if a, err := readApplied(runDir); err == nil {
+			last = a.RequestedAt
+		}
+		release()
+	}
+	lastErr := ""
+	logOnce := func(err error) {
+		if msg := err.Error(); msg != lastErr {
+			lastErr = msg
+			log.Printf("ampls-helper: %s", msg)
+		}
 	}
 	process := func() {
+		release, err := lockDir(runDir)
+		if err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				logOnce(err)
+			}
+			return
+		}
+		defer release()
 		req, err := readPending(runDir)
-		if err != nil || req.RequestedAt.IsZero() || !req.RequestedAt.After(last) {
+		// Equal (not After): a bogus far-future timestamp must not block later requests.
+		if err != nil || req.RequestedAt.IsZero() || req.RequestedAt.Equal(last) {
 			return
 		}
 		last = req.RequestedAt
-		tld := configuredTLD(home)
-		if !helperTLDs[tld] {
-			res := AppliedResult{RequestedAt: req.RequestedAt, AppliedAt: time.Now().UTC(),
-				Error: fmt.Sprintf("tld %q is not allowed for the helper service", tld)}
-			_ = writeApplied(runDir, res)
-			return
-		}
-		if err := applyPending(runDir, tld); err != nil {
-			log.Printf("ampls-helper: %v", err)
+		if err := applyRequest(runDir, req); err != nil {
+			logOnce(err)
 		} else {
+			lastErr = ""
 			log.Printf("ampls-helper: applied %d domains", len(req.Domains))
 		}
 	}

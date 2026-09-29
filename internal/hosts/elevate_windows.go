@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"syscall"
 	"unsafe"
 
@@ -100,7 +101,12 @@ func runElevated(exe string, args []string) (uint32, error) {
 }
 
 func elevateApply() error {
-	exe := paths.BinDir() + `\ampls.exe`
+	// Always the ampls.exe installed next to this binary (absolute, derived
+	// from os.Executable), never a name resolved via PATH or the cwd.
+	exe := filepath.Join(paths.BinDir(), "ampls.exe")
+	if !filepath.IsAbs(exe) {
+		return fmt.Errorf("cannot locate ampls.exe (install dir %q is not absolute)", paths.BinDir())
+	}
 	if _, err := os.Stat(exe); err != nil {
 		return fmt.Errorf("%s not found: %w", exe, err)
 	}
@@ -117,8 +123,22 @@ func elevateApply() error {
 	return nil
 }
 
+// systemExe returns the absolute path of a System32 tool, so privileged
+// callers (the LocalSystem helper, elevated `ampls`) never resolve it via PATH.
+func systemExe(name string) string {
+	dir, err := windows.GetSystemDirectory()
+	if err != nil || dir == "" {
+		root := os.Getenv("SystemRoot")
+		if root == "" {
+			root = `C:\Windows`
+		}
+		dir = filepath.Join(root, "System32")
+	}
+	return filepath.Join(dir, name)
+}
+
 func flushDNS() {
-	cmd := exec.Command("ipconfig", "/flushdns")
+	cmd := exec.Command(systemExe("ipconfig.exe"), "/flushdns")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: windows.CREATE_NO_WINDOW}
 	_ = cmd.Run()
 }

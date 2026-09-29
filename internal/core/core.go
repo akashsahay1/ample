@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"ampls/internal/apache"
@@ -32,15 +34,71 @@ var _ api.Backend = (*Core)(nil)
 type Core struct {
 	mu sync.Mutex // serialises config-changing operations and service control
 
+	// BackgroundSync makes ListSites apply newly discovered sites (folders dropped
+	// into a parked directory) in a background goroutine. Only long-running
+	// processes (the GUI) may enable it: a CLI process would exit mid-restart.
+	BackgroundSync bool
+	bgSyncing      atomic.Bool
+
 	availMu    sync.Mutex
 	avail      []php.Release
 	availFetch time.Time
 
-	syncedMu  sync.Mutex
-	syncedKey string // fingerprint of the last applied site set
+	verMu sync.Mutex
+	vers  map[string]exeVersion // exe path -> cached `-v` output
+
+	errMu   sync.Mutex
+	lastErr map[string]string // service -> last start error (cleared on success/stop)
+}
+
+type exeVersion struct {
+	mod     time.Time
+	size    int64
+	version string
 }
 
 func New() *Core { return &Core{} }
+
+// cachedVersion runs fn (which spawns `httpd -v` / `mysqld --version`) only when
+// the executable changed, so frequent Overview polling does not spawn processes.
+func (c *Core) cachedVersion(exe string, fn func() string) string {
+	fi, err := os.Stat(exe)
+	if err != nil {
+		return ""
+	}
+	c.verMu.Lock()
+	defer c.verMu.Unlock()
+	if v, ok := c.vers[exe]; ok && v.mod.Equal(fi.ModTime()) && v.size == fi.Size() {
+		return v.version
+	}
+	s := fn()
+	if s != "" {
+		if c.vers == nil {
+			c.vers = map[string]exeVersion{}
+		}
+		c.vers[exe] = exeVersion{mod: fi.ModTime(), size: fi.Size(), version: s}
+	}
+	return s
+}
+
+func (c *Core) setServiceErr(name string, err error) {
+	c.errMu.Lock()
+	defer c.errMu.Unlock()
+	if c.lastErr == nil {
+		c.lastErr = map[string]string{}
+	}
+	if err == nil {
+		delete(c.lastErr, name)
+	} else {
+		c.lastErr[name] = err.Error()
+	}
+}
+
+func (c *Core) serviceErr(name string) string {
+	c.errMu.Lock()
+	defer c.errMu.Unlock()
+	return c.lastErr[name]
+}
 
 // ---------- helpers ----------
 
@@ -76,18 +134,49 @@ func (c *Core) discover(cfg *config.Config) ([]api.Site, error) {
 	return sites.Discover(cfg)
 }
 
+// effectivePHP is the version a site's vhost actually uses: its own if
+// installed, else the default.
+func effectivePHP(s api.Site, def string) string {
+	if s.PHP != "" && phpInstalled(s.PHP) {
+		return s.PHP
+	}
+	return def
+}
+
+// siteKey fingerprints everything the generated Apache config depends on.
+// cfg.DefaultPHP must already be resolved (see discover).
 func siteKey(ss []api.Site, cfg *config.Config) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%d|%d|%s|", cfg.Ports.HTTP, cfg.Ports.HTTPS, cfg.DefaultPHP)
 	for _, s := range ss {
-		fmt.Fprintf(&b, "%s|%s|%s|%t;", s.Domain, s.DocRoot, s.PHP, s.Secure)
+		fmt.Fprintf(&b, "%s|%s|%s|%t;", s.Domain, s.DocRoot, effectivePHP(s, cfg.DefaultPHP), s.Secure)
 	}
 	return b.String()
 }
 
+// The fingerprint of the config last written to disk is persisted so that every
+// process (GUI, CLI) knows whether Apache needs a restart.
+func appliedKeyPath() string { return filepath.Join(paths.RunDir(), "sites.applied") }
+
+func appliedKey() string {
+	b, err := os.ReadFile(appliedKeyPath())
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+func setAppliedKey(k string) {
+	if err := os.MkdirAll(paths.RunDir(), 0o755); err == nil {
+		_ = os.WriteFile(appliedKeyPath(), []byte(k), 0o644)
+	}
+}
+
 // sync regenerates Apache config, site certs and hosts entries from config.
-// restart: restart Apache if it is running so the change takes effect.
-func (c *Core) sync(restart bool) error {
+// restart: restart Apache if it is running and the generated config changed.
+func (c *Core) sync(restart bool) error { return c.syncOpts(restart, true) }
+
+func (c *Core) syncOpts(restart, requestHosts bool) error {
 	cfg, err := c.cfg()
 	if err != nil {
 		return err
@@ -100,10 +189,7 @@ func (c *Core) sync(restart bool) error {
 	var vhosts []apache.VHost
 	var domains []string
 	for _, s := range ss {
-		ver := s.PHP
-		if !phpInstalled(ver) {
-			ver = def
-		}
+		ver := effectivePHP(s, def)
 		v := apache.VHost{
 			Domain:  s.Domain,
 			Aliases: []string{"*." + s.Domain},
@@ -130,14 +216,16 @@ func (c *Core) sync(restart bool) error {
 	if err := apache.WriteConfig(apache.Options{HTTPPort: cfg.Ports.HTTP, HTTPSPort: cfg.Ports.HTTPS, DefaultPHPCGI: defCGI}, vhosts); err != nil {
 		return err
 	}
-	if err := hosts.Request(domains, cfg.TLD); err != nil {
-		// Not fatal: sites still work via http://127.0.0.1 with Host header, and the user can retry.
-		fmt.Fprintln(os.Stderr, "ampls: hosts update failed:", err)
+	if requestHosts {
+		if err := hosts.Request(domains, cfg.TLD); err != nil {
+			// Not fatal: sites still work via http://127.0.0.1 with Host header, and the user can retry.
+			fmt.Fprintln(os.Stderr, "ampls: hosts update failed:", err)
+		}
 	}
-	c.syncedMu.Lock()
-	c.syncedKey = siteKey(ss, cfg)
-	c.syncedMu.Unlock()
-	if restart && services.Status(api.ServiceApache).Running {
+	key := siteKey(ss, cfg)
+	changed := key != appliedKey()
+	setAppliedKey(key)
+	if restart && changed && services.Status(api.ServiceApache).Running {
 		return c.restartApache()
 	}
 	return nil
@@ -167,27 +255,51 @@ func (c *Core) Overview() (api.Overview, error) {
 func (c *Core) serviceStatus(name string, cfg *config.Config) api.ServiceStatus {
 	st := services.Status(name)
 	s := api.ServiceStatus{Name: name, Running: st.Running, PID: st.PID}
+	if !st.Running {
+		s.Error = c.serviceErr(name)
+	}
 	switch name {
 	case api.ServiceApache:
-		s.Version = apache.Version()
+		s.Version = c.cachedVersion(apache.HttpdPath(), apache.Version)
 		s.Ports = []int{cfg.Ports.HTTP, cfg.Ports.HTTPS}
 	case api.ServiceMySQL:
-		s.Version = mysql.Version()
+		s.Version = c.cachedVersion(mysql.MysqldPath(), mysql.Version)
 		s.Ports = []int{cfg.Ports.MySQL}
 	}
 	return s
 }
 
+func serviceTitle(name string) string {
+	switch name {
+	case api.ServiceApache:
+		return "Apache"
+	case api.ServiceMySQL:
+		return "MySQL"
+	}
+	return name
+}
+
+// each runs fn for every service, prefixing errors with the service name.
+func each(fn func(string) error, names ...string) error {
+	var errs []error
+	for _, n := range names {
+		if err := fn(n); err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", serviceTitle(n), err))
+		}
+	}
+	return errors.Join(errs...)
+}
+
 func (c *Core) StartAll() error {
-	return errors.Join(c.StartService(api.ServiceMySQL), c.StartService(api.ServiceApache))
+	return each(c.StartService, api.ServiceMySQL, api.ServiceApache)
 }
 
 func (c *Core) StopAll() error {
-	return errors.Join(c.StopService(api.ServiceApache), c.StopService(api.ServiceMySQL))
+	return each(c.StopService, api.ServiceApache, api.ServiceMySQL)
 }
 
 func (c *Core) RestartAll() error {
-	return errors.Join(c.RestartService(api.ServiceMySQL), c.RestartService(api.ServiceApache))
+	return each(c.RestartService, api.ServiceMySQL, api.ServiceApache)
 }
 
 func (c *Core) StartService(name string) error {
@@ -199,7 +311,11 @@ func (c *Core) StartService(name string) error {
 func (c *Core) StopService(name string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.stop(name)
+	err := c.stop(name)
+	if err == nil {
+		c.setServiceErr(name, nil)
+	}
+	return err
 }
 
 func (c *Core) RestartService(name string) error {
@@ -229,12 +345,19 @@ func portFree(port int, what string) error {
 }
 
 func (c *Core) start(name string) error {
+	if services.Status(name).Running {
+		c.setServiceErr(name, nil)
+		return nil
+	}
+	err := c.startService(name)
+	c.setServiceErr(name, err)
+	return err
+}
+
+func (c *Core) startService(name string) error {
 	cfg, err := c.cfg()
 	if err != nil {
 		return err
-	}
-	if services.Status(name).Running {
-		return nil
 	}
 	switch name {
 	case api.ServiceApache:
@@ -253,10 +376,23 @@ func (c *Core) start(name string) error {
 		if err := portFree(cfg.Ports.HTTP, "HTTP"); err != nil {
 			return err
 		}
+		if ss, err := c.discover(cfg); err == nil {
+			for _, s := range ss {
+				if s.Secure { // httpd.conf only listens on HTTPS when a site is secured
+					if err := portFree(cfg.Ports.HTTPS, "HTTPS"); err != nil {
+						return err
+					}
+					break
+				}
+			}
+		}
 		if err := services.Start(name, apache.HttpdPath(), apache.StartArgs(), logPath("apache-stdout.log")); err != nil {
 			return err
 		}
-		return services.WaitPort(cfg.Ports.HTTP, 15*time.Second)
+		if err := services.WaitPort(cfg.Ports.HTTP, 15*time.Second); err != nil {
+			return fmt.Errorf("%w (see the apache-error log)", err)
+		}
+		return nil
 	case api.ServiceMySQL:
 		if _, err := os.Stat(mysql.MysqldPath()); err != nil {
 			return errors.New("MySQL is not installed in the AMPLS data directory")
@@ -275,7 +411,10 @@ func (c *Core) start(name string) error {
 		if err := services.Start(name, mysql.MysqldPath(), mysql.StartArgs(), logPath("mysql-stdout.log")); err != nil {
 			return err
 		}
-		return services.WaitPort(cfg.Ports.MySQL, 60*time.Second)
+		if err := services.WaitPort(cfg.Ports.MySQL, 60*time.Second); err != nil {
+			return fmt.Errorf("%w (see the mysql log)", err)
+		}
+		return nil
 	}
 	return fmt.Errorf("unknown service %q", name)
 }
@@ -305,12 +444,11 @@ func (c *Core) ListSites() ([]api.Site, error) {
 	if err != nil {
 		return nil, err
 	}
-	// New folders dropped into a parked directory: apply them in the background.
-	c.syncedMu.Lock()
-	stale := c.syncedKey != "" && c.syncedKey != siteKey(ss, cfg)
-	c.syncedMu.Unlock()
-	if stale {
+	// New folders dropped into a parked directory: apply them in the background
+	// (at most one sync in flight; sync itself restarts Apache only on change).
+	if c.BackgroundSync && siteKey(ss, cfg) != appliedKey() && c.bgSyncing.CompareAndSwap(false, true) {
 		go func() {
+			defer c.bgSyncing.Store(false)
 			c.mu.Lock()
 			defer c.mu.Unlock()
 			_ = c.sync(true)
@@ -494,9 +632,25 @@ func (c *Core) InstallPHP(version string, progress api.ProgressFunc) error {
 			progress(p)
 		}
 	}
-	err := php.Install(context.Background(), version, func(msg string, pct float64) {
-		report(api.Progress{Message: msg, Percent: pct})
-	})
+	install := func() error {
+		return php.Install(context.Background(), version, func(msg string, pct float64) {
+			report(api.Progress{Message: msg, Percent: pct})
+		})
+	}
+	err := install()
+	if err != nil && phpInstalled(version) && strings.Contains(err.Error(), "in use") {
+		// Reinstalling a version Apache's php-cgi processes are using: stop Apache,
+		// retry (the verified download is cached) and start it again.
+		c.mu.Lock()
+		if services.Status(api.ServiceApache).Running {
+			report(api.Progress{Message: "Stopping Apache to replace PHP " + version, Percent: -1})
+			if serr := c.stop(api.ServiceApache); serr == nil {
+				err = install()
+				_ = c.start(api.ServiceApache) // a failure is surfaced in the service status
+			}
+		}
+		c.mu.Unlock()
+	}
 	if err == nil {
 		c.mu.Lock()
 		_, err = config.Update(func(cfg *config.Config) error {
@@ -505,6 +659,11 @@ func (c *Core) InstallPHP(version string, progress api.ProgressFunc) error {
 			}
 			return nil
 		})
+		if err == nil {
+			// Sites pinned to this version (or everything, if it is the first PHP)
+			// now resolve differently.
+			err = c.sync(true)
+		}
 		c.mu.Unlock()
 	}
 	if err != nil {
@@ -519,6 +678,9 @@ func (c *Core) RemovePHP(version string) error {
 	cfg, err := c.cfg()
 	if err != nil {
 		return err
+	}
+	if !phpInstalled(version) {
+		return fmt.Errorf("PHP %s is not installed", version)
 	}
 	if defaultPHP(cfg) == version {
 		return fmt.Errorf("PHP %s is the default version: make another version the default first", version)
@@ -535,14 +697,18 @@ func (c *Core) RemovePHP(version string) error {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if services.Status(api.ServiceApache).Running {
-		// php-cgi.exe processes of this version hold file locks.
-		if err := c.stop(api.ServiceApache); err != nil {
-			return err
-		}
-		defer c.start(api.ServiceApache)
+	if !services.Status(api.ServiceApache).Running {
+		return php.Remove(version)
 	}
-	return php.Remove(version)
+	// php-cgi.exe processes of this version hold file locks.
+	if err := c.stop(api.ServiceApache); err != nil {
+		return err
+	}
+	err = php.Remove(version)
+	if serr := c.start(api.ServiceApache); serr != nil {
+		err = errors.Join(err, fmt.Errorf("restart Apache: %w", serr))
+	}
+	return err
 }
 
 func (c *Core) SetDefaultPHP(version string) error {
@@ -597,7 +763,7 @@ func (c *Core) GetSettings() (api.Settings, error) {
 		Parked:                append([]string{}, cfg.Parked...),
 		StartServicesOnLaunch: cfg.App.StartServicesOnLaunch,
 		StopServicesOnQuit:    cfg.App.StopServicesOnQuit,
-		LaunchAtLogin:         cfg.App.LaunchAtLogin,
+		LaunchAtLogin:         cfg.App.LaunchAtLogin || launchAtLoginEnabled(),
 		Home:                  paths.Home(),
 	}, nil
 }
@@ -608,11 +774,33 @@ func (c *Core) SaveSettings(s api.Settings) error {
 			return fmt.Errorf("invalid port %d", p)
 		}
 	}
-	var mysqlPortChanged bool
-	err := c.mutate(func(cfg *config.Config) error {
-		mysqlPortChanged = cfg.Ports.MySQL != s.MySQLPort
+	if s.HTTPPort == s.HTTPSPort || s.HTTPPort == s.MySQLPort || s.HTTPSPort == s.MySQLPort {
+		return errors.New("the HTTP, HTTPS and MySQL ports must all be different")
+	}
+	parked := []string{}
+	for _, p := range s.Parked {
+		if strings.TrimSpace(p) != "" {
+			parked = append(parked, cleanPath(p))
+		}
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	old, err := c.cfg()
+	if err != nil {
+		return err
+	}
+	// Stop MySQL while the config still has the old port so the graceful
+	// shutdown reaches it (instead of killing mysqld).
+	restartMySQL := false
+	if old.Ports.MySQL != s.MySQLPort && services.Status(api.ServiceMySQL).Running {
+		if err := c.stop(api.ServiceMySQL); err != nil {
+			return err
+		}
+		restartMySQL = true
+	}
+	_, err = config.Update(func(cfg *config.Config) error {
 		cfg.Ports = config.Ports{HTTP: s.HTTPPort, HTTPS: s.HTTPSPort, MySQL: s.MySQLPort}
-		cfg.Parked = s.Parked
+		cfg.Parked = parked
 		cfg.App = config.AppSettings{
 			StartServicesOnLaunch: s.StartServicesOnLaunch,
 			StopServicesOnQuit:    s.StopServicesOnQuit,
@@ -620,15 +808,19 @@ func (c *Core) SaveSettings(s api.Settings) error {
 		}
 		return nil
 	})
+	if err == nil {
+		err = c.sync(true) // restarts Apache only if ports/sites changed
+	}
+	if restartMySQL {
+		if serr := c.start(api.ServiceMySQL); serr != nil {
+			err = errors.Join(err, fmt.Errorf("MySQL: %w", serr))
+		}
+	}
 	if err != nil {
 		return err
 	}
 	if err := setLaunchAtLogin(s.LaunchAtLogin); err != nil {
 		return fmt.Errorf("launch at login: %w", err)
-	}
-	if mysqlPortChanged && services.Status(api.ServiceMySQL).Running {
-		// Graceful shutdown targets the new port and fails; services.Stop then kills the process.
-		return c.RestartService(api.ServiceMySQL)
 	}
 	return nil
 }
