@@ -102,8 +102,8 @@ func addEnvCommands(root *cobra.Command) {
 
 	var (
 		dryRun, park, allSites, allDB, installPHP, secure, overwrite bool
-		sitesFlag, dbFlag                                           []string
-		src                                                         api.MySQLSource
+		sitesFlag, dbFlag                                            []string
+		src                                                          api.MySQLSource
 	)
 	imp := &cobra.Command{
 		Use:   "import <xampp|herd|laragon|wamp|mysql>",

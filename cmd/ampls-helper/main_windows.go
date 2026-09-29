@@ -116,9 +116,9 @@ func install(home string) error {
 		}
 	} else {
 		s, err = m.CreateService(serviceName, exe, mgr.Config{
-			DisplayName: displayName,
-			Description: description,
-			StartType:   mgr.StartAutomatic,
+			DisplayName:  displayName,
+			Description:  description,
+			StartType:    mgr.StartAutomatic,
 			ErrorControl: mgr.ErrorNormal,
 		}, "run", "--home", home)
 		if err != nil {

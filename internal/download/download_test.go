@@ -94,7 +94,7 @@ func TestFile(t *testing.T) {
 
 func TestUnzipSlipVariants(t *testing.T) {
 	cases := []map[string]string{
-		{"top/a.txt": "x", "top/../../evil.txt": "x"},    // escapes after stripTopDir
+		{"top/a.txt": "x", "top/../../evil.txt": "x"}, // escapes after stripTopDir
 		{"top/a.txt": "x", `top/..\..\evil.txt`: "x"}, // backslash separators
 	}
 	for i, files := range cases {
