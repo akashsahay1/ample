@@ -35,3 +35,18 @@ func TestWriteConfigRejectsInjection(t *testing.T) {
 		t.Fatalf("valid vhost rejected: %v", err)
 	}
 }
+
+// The first *:http vhost (Apache's fallback for unknown Host headers) must deny
+// everything, so DNS rebinding cannot reach localhost/phpMyAdmin.
+func TestRenderMainDefaultVHostDenies(t *testing.T) {
+	s := RenderMain(Options{HTTPPort: 80}, `C:\AMPLS`, false)
+	first := strings.Index(s, "<VirtualHost *:80>")
+	end := strings.Index(s[first:], "</VirtualHost>")
+	block := s[first : first+end]
+	if !strings.Contains(block, "Require all denied") || strings.Contains(block, "phpmyadmin") || strings.Contains(block, "ServerName localhost") {
+		t.Fatalf("first vhost is not a deny-all fallback:\n%s", block)
+	}
+	if strings.Index(s, "    ServerName localhost") < first {
+		t.Fatal("localhost vhost precedes the fallback")
+	}
+}

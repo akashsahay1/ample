@@ -102,6 +102,19 @@ func RenderMain(opts Options, home string, listenHTTPS bool) string {
 	w("SSLProtocol all -SSLv3 -TLSv1 -TLSv1.1")
 	w("SSLHonorCipherOrder off")
 	w("")
+	// The first vhost is Apache's fallback for any unknown Host header. Make it
+	// deny everything so a DNS-rebinding page (Host: attacker.example resolving
+	// to 127.0.0.1) cannot reach the localhost site or phpMyAdmin (root with an
+	// empty password by default -> SQL -> INTO OUTFILE -> PHP code execution).
+	w("# Fallback for unknown Host headers (DNS rebinding protection)")
+	w("<VirtualHost *:%d>", opts.HTTPPort)
+	w("    ServerName ampls-default.invalid")
+	w("    DocumentRoot %s", q(j("www")))
+	w("    <Location />")
+	w("        Require all denied")
+	w("    </Location>")
+	w("</VirtualHost>")
+	w("")
 	w("# Default site: http://localhost")
 	w("<VirtualHost *:%d>", opts.HTTPPort)
 	w("    ServerName localhost")
