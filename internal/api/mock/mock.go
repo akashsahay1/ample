@@ -48,6 +48,8 @@ type Backend struct {
 	settings api.Settings
 	trusted  bool
 	nextPID  int
+	// coexistence (see coexist.go)
+	xamppStopped bool
 }
 
 var _ api.Backend = (*Backend)(nil)
@@ -89,8 +91,9 @@ func defaultIni(ver string) api.PHPSettings {
 func New() *Backend {
 	b := &Backend{
 		services: map[string]*service{
-			api.ServiceApache: {running: true, pid: 11824, version: "2.4.65", ports: []int{80, 443}},
-			api.ServiceMySQL:  {running: true, pid: 9920, version: "8.4.6", ports: []int{3306}},
+			// stopped: XAMPP holds :80 and :3306 (see coexist.go)
+			api.ServiceApache: {version: "2.4.65", ports: []int{80, 443}},
+			api.ServiceMySQL:  {version: "8.4.6", ports: []int{3306}},
 		},
 		php: map[string]*phpEntry{
 			"8.5": {full: "8.5.0", installed: true, size: 33 << 20},
@@ -188,6 +191,9 @@ func (b *Backend) setRunning(name string, on bool) error {
 		return fmt.Errorf("unknown service %q", name)
 	}
 	if on && !s.running {
+		if err := b.portBlockedLocked(name); err != nil {
+			return fmt.Errorf("%s cannot start: %w", name, err)
+		}
 		b.nextPID += 4
 		s.pid = b.nextPID
 	}

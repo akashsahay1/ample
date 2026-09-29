@@ -5,6 +5,7 @@ import {phpMyAdminURL, shortPath} from '../lib/format'
 import {useApp} from '../state/AppState'
 import {useLoad} from '../state/useLoad'
 import {Badge, Button, Empty, PageHeader, ServiceIcon} from '../components/ui'
+import ConflictBanner from '../components/ConflictBanner'
 
 function ServiceCard({
   kind,
@@ -73,6 +74,8 @@ export default function Dashboard() {
   const {overview, run, go, setNewProjectOpen} = useApp()
   const sites = useLoad(() => backend.ListSites())
   const settings = useLoad(() => backend.GetSettings())
+  // a backend without coexistence support rejects; the card is then hidden
+  const envs = useLoad(() => backend.DetectEnvironments())
   const svc = (n: string) => overview?.services.find(s => s.name === n)
   const apache = svc('apache')
   const mysql = svc('mysql')
@@ -83,6 +86,7 @@ export default function Dashboard() {
 
   return (
     <>
+      <ConflictBanner />
       <PageHeader title="Dashboard" subtitle="Your local stack at a glance.">
         {anyRunning ? (
           <Button onClick={() => run(() => backend.StopAll(), 'All services stopped')}>Stop all</Button>
@@ -194,26 +198,46 @@ export default function Dashboard() {
             </div>
           )}
         </section>
-        <section className="card flex flex-col gap-2.5 self-start p-5">
-          <h2 className="m-0 text-[15px] font-semibold">Quick actions</h2>
-          <Button className="h-11! justify-start" icon={<FolderOpen size={16} />} disabled={!sitesDir} onClick={() => run(() => backend.OpenFolder(sitesDir))}>
-            Open Sites folder
-          </Button>
-          <Button className="h-11! justify-start" icon={<Plus size={16} />} onClick={() => setNewProjectOpen(true)}>
-            New project
-          </Button>
-          <Button className="h-11! justify-start" icon={<SquareTerminal size={16} />} disabled={!sitesDir} onClick={() => run(() => backend.OpenTerminal(sitesDir))}>
-            Open terminal here
-          </Button>
-          <Button
-            className="h-11! justify-start"
-            icon={<ShieldCheck size={16} />}
-            disabled={overview?.caTrusted}
-            onClick={() => run(() => backend.TrustCA(), 'Local HTTPS certificate trusted')}
-          >
-            {overview?.caTrusted ? 'HTTPS certificate trusted' : 'Trust local HTTPS certificate'}
-          </Button>
-        </section>
+        <div className="flex min-w-0 flex-col gap-4 self-start">
+          <section className="card flex flex-col gap-2.5 p-5">
+            <h2 className="m-0 text-[15px] font-semibold">Quick actions</h2>
+            <Button className="h-11! justify-start" icon={<FolderOpen size={16} />} disabled={!sitesDir} onClick={() => run(() => backend.OpenFolder(sitesDir))}>
+              Open Sites folder
+            </Button>
+            <Button className="h-11! justify-start" icon={<Plus size={16} />} onClick={() => setNewProjectOpen(true)}>
+              New project
+            </Button>
+            <Button className="h-11! justify-start" icon={<SquareTerminal size={16} />} disabled={!sitesDir} onClick={() => run(() => backend.OpenTerminal(sitesDir))}>
+              Open terminal here
+            </Button>
+            <Button
+              className="h-11! justify-start"
+              icon={<ShieldCheck size={16} />}
+              disabled={overview?.caTrusted}
+              onClick={() => run(() => backend.TrustCA(), 'Local HTTPS certificate trusted')}
+            >
+              {overview?.caTrusted ? 'HTTPS certificate trusted' : 'Trust local HTTPS certificate'}
+            </Button>
+          </section>
+          {(envs.data?.length ?? 0) > 0 && (
+            <section className="card flex flex-col gap-2 p-5">
+              <div className="flex items-center">
+                <h2 className="m-0 grow text-[15px] font-semibold">Other environments</h2>
+                <button type="button" className="border-0 bg-transparent p-0 text-[13px] font-medium text-link hover:text-eol" onClick={() => go('import')}>
+                  Import…
+                </button>
+              </div>
+              {envs.data!.map(e => (
+                <div key={e.kind + e.path} className="flex min-w-0 items-center gap-2 text-[13px]">
+                  <span className="min-w-0 grow truncate" title={e.path}>
+                    {e.name}
+                  </span>
+                  {e.running ? <span className="tag bg-ok-bg text-ok">Running</span> : <span className="tag bg-[#EFEDE8] text-muted">Stopped</span>}
+                </div>
+              ))}
+            </section>
+          )}
+        </div>
       </div>
     </>
   )

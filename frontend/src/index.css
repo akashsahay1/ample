@@ -60,7 +60,7 @@
   .btn {
     height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--color-field);
     background: #fff; font: 500 13px var(--font-sans); color: var(--color-ink);
-    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; flex-shrink: 0;
     transition: background-color .12s, border-color .12s;
   }
   .btn:hover:not(:disabled) { background: #F7F5F1; border-color: #CBC6BC; }
@@ -89,6 +89,11 @@
     font: 500 12px var(--font-mono); padding: 0 8px; max-width: 100%;
   }
   .sel-php.eol { border-color: #F0C6B2; background: #FDF1EB; color: var(--color-eol); }
+  .cb { width: 16px; height: 16px; accent-color: var(--color-brand); margin: 0; }
+  .src-tag { font-size: 11px; color: var(--color-muted); background: #F1EFEA; border-radius: 6px; padding: 2px 6px; justify-self: start; white-space: nowrap; }
+  .pin { font-family: var(--font-mono); font-size: 12px; color: var(--color-php); background: var(--color-php-bg); border-radius: 6px; padding: 2px 8px; justify-self: start; white-space: nowrap; }
+  .pin.missing { color: var(--color-eol); background: var(--color-eol-bg); }
+  .tag { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; white-space: nowrap; flex-shrink: 0; }
   .label-caps { font-size: 12px; font-weight: 600; color: var(--color-muted); text-transform: uppercase; letter-spacing: .06em; }
   .badge { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
   .chip { font-family: var(--font-mono); font-size: 12px; background: #fff; border: 1px solid var(--color-line); border-radius: 999px; padding: 5px 6px 5px 12px; display: inline-flex; align-items: center; gap: 6px; }

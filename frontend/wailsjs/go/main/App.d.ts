@@ -6,6 +6,8 @@ export function AppVersion():Promise<string>;
 
 export function CreateDatabase(arg1:string):Promise<void>;
 
+export function DetectEnvironments():Promise<Array<api.ExternalEnv>>;
+
 export function DropDatabase(arg1:string):Promise<void>;
 
 export function ExportDatabase(arg1:string,arg2:string):Promise<void>;
@@ -48,6 +50,8 @@ export function PHPIniPath(arg1:string):Promise<string>;
 
 export function Park(arg1:string):Promise<void>;
 
+export function PortConflicts():Promise<Array<api.PortConflict>>;
+
 export function Quit():Promise<void>;
 
 export function ReadLog(arg1:string,arg2:number):Promise<string>;
@@ -58,11 +62,15 @@ export function RestartAll():Promise<void>;
 
 export function RestartService(arg1:string):Promise<void>;
 
+export function RunImport(arg1:api.ImportRequest):Promise<void>;
+
 export function SaveFile(arg1:string,arg2:string):Promise<string>;
 
 export function SavePHPSettings(arg1:api.PHPSettings):Promise<void>;
 
 export function SaveSettings(arg1:api.Settings):Promise<void>;
+
+export function ScanImport(arg1:string,arg2:api.MySQLSource):Promise<api.ImportPlan>;
 
 export function SelectDirectory(arg1:string):Promise<string>;
 
@@ -83,6 +91,8 @@ export function StartAll():Promise<void>;
 export function StartService(arg1:string):Promise<void>;
 
 export function StopAll():Promise<void>;
+
+export function StopEnvironment(arg1:string):Promise<void>;
 
 export function StopService(arg1:string):Promise<void>;
 

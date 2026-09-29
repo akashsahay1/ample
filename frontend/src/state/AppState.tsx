@@ -1,7 +1,7 @@
 import {createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState} from 'react'
-import {backend, errMsg, hasBackend, onProgress, onStatus, Overview} from '../lib/api'
+import {backend, errMsg, hasBackend, onProgress, onStatus, Overview, PortConflict} from '../lib/api'
 
-export type Route = 'dashboard' | 'sites' | 'php' | 'mysql' | 'logs' | 'settings'
+export type Route = 'dashboard' | 'sites' | 'php' | 'mysql' | 'import' | 'logs' | 'settings'
 
 export interface Toast {
   id: number
@@ -24,6 +24,8 @@ interface AppState {
   route: Route
   go: (r: Route) => void
   overview: Overview | null
+  /** ports AMPLS needs that another program holds (polled with the overview) */
+  conflicts: PortConflict[]
   /** increments on every status change; screens reload their data when it changes */
   tick: number
   refresh: () => Promise<void>
@@ -49,9 +51,10 @@ export function useApp(): AppState {
 export function AppProvider({children}: {children: ReactNode}) {
   const [route, setRoute] = useState<Route>(() => {
     const h = window.location.hash.replace('#/', '') as Route
-    return ['dashboard', 'sites', 'php', 'mysql', 'logs', 'settings'].includes(h) ? h : 'dashboard'
+    return ['dashboard', 'sites', 'php', 'mysql', 'import', 'logs', 'settings'].includes(h) ? h : 'dashboard'
   })
   const [overview, setOverview] = useState<Overview | null>(null)
+  const [conflicts, setConflicts] = useState<PortConflict[]>([])
   const [tick, setTick] = useState(0)
   const [toasts, setToasts] = useState<Toast[]>([])
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null)
@@ -76,11 +79,12 @@ export function AppProvider({children}: {children: ReactNode}) {
 
   const refresh = useCallback(async () => {
     if (!hasBackend()) return
-    try {
-      setOverview(await backend.Overview())
-    } catch (e) {
-      console.error(e)
-    }
+    const [ov, pc] = await Promise.allSettled([backend.Overview(), backend.PortConflicts()])
+    if (ov.status === 'fulfilled') setOverview(ov.value)
+    else console.error(ov.reason)
+    // a backend without coexistence support rejects; treat as no conflicts
+    const next = pc.status === 'fulfilled' ? (pc.value ?? []) : []
+    setConflicts(prev => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
   }, [])
 
   const run = useCallback(
@@ -141,6 +145,7 @@ export function AppProvider({children}: {children: ReactNode}) {
         route,
         go,
         overview,
+        conflicts,
         tick,
         refresh,
         toast,

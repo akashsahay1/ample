@@ -18,7 +18,8 @@ export function Button({variant = 'default', size = 'lg', onClick, pending, icon
   useEffect(() => () => void (mounted.current = false), [])
   const isBusy = busy || !!pending
   const cls = [
-    'btn',
+    // never wrap or shrink (also enforced by .btn in index.css)
+    'btn shrink-0 whitespace-nowrap',
     variant === 'primary' ? 'btn-pri' : variant === 'danger' ? 'btn-danger' : '',
     size === 'sm' ? 'btn-sm' : size === 'md' ? 'btn-md' : '',
     className,

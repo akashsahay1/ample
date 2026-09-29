@@ -5,6 +5,7 @@ import Sites from './screens/Sites'
 import Php from './screens/Php'
 import Mysql from './screens/Mysql'
 import Logs from './screens/Logs'
+import Import from './screens/Import'
 import SettingsScreen from './screens/Settings'
 import NewProjectModal from './screens/NewProjectModal'
 
@@ -17,6 +18,8 @@ function Screen() {
       return <Php />
     case 'mysql':
       return <Mysql />
+    case 'import':
+      return <Import />
     case 'logs':
       return <Logs />
     case 'settings':

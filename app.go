@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync/atomic"
 
@@ -154,6 +155,67 @@ func (a *App) GetSettings() (api.Settings, error) { return a.b.GetSettings() }
 func (a *App) SaveSettings(s api.Settings) error  { return a.mutated(a.b.SaveSettings(s)) }
 
 func (a *App) TrustCA() error { return a.mutated(a.b.TrustCA()) }
+
+// ---- api.Coexistence (optional; checked by type assertion) ----
+
+var errNoCoexistence = errors.New("importing and detecting other environments is not supported by this backend")
+
+func (a *App) coexist() (api.Coexistence, error) {
+	if c, ok := a.b.(api.Coexistence); ok {
+		return c, nil
+	}
+	return nil, errNoCoexistence
+}
+
+// DetectEnvironments lists other local stacks (XAMPP, Herd, Laragon, WAMP).
+func (a *App) DetectEnvironments() ([]api.ExternalEnv, error) {
+	c, err := a.coexist()
+	if err != nil {
+		return nil, err
+	}
+	return c.DetectEnvironments()
+}
+
+// PortConflicts lists ports AMPLS is configured to use that another program holds.
+func (a *App) PortConflicts() ([]api.PortConflict, error) {
+	c, err := a.coexist()
+	if err != nil {
+		return nil, err
+	}
+	return c.PortConflicts()
+}
+
+// StopEnvironment stops another environment's own servers (user-initiated).
+func (a *App) StopEnvironment(kind string) error {
+	c, err := a.coexist()
+	if err != nil {
+		return err
+	}
+	return a.mutated(c.StopEnvironment(kind))
+}
+
+// ScanImport previews what an import from kind would bring over. src is only
+// used for api.EnvMySQL (and Herd Pro databases).
+func (a *App) ScanImport(kind string, src *api.MySQLSource) (api.ImportPlan, error) {
+	c, err := a.coexist()
+	if err != nil {
+		return api.ImportPlan{}, err
+	}
+	return c.ScanImport(kind, src)
+}
+
+// RunImport performs an import; progress is emitted as api.ProgressEvent with
+// task api.ImportTaskPrefix+kind.
+func (a *App) RunImport(req api.ImportRequest) error {
+	c, err := a.coexist()
+	if err == nil {
+		err = c.RunImport(req, a.emitProgress)
+	}
+	if err != nil {
+		a.emitProgress(api.Progress{Task: api.ImportTaskPrefix + req.Kind, Done: true, Percent: 100, Error: err.Error()})
+	}
+	return a.mutated(err)
+}
 
 // ---- UI helpers ----
 

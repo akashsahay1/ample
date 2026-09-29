@@ -13,6 +13,45 @@ export type MySQLInfo = api.MySQLInfo
 export type Database = api.Database
 export type Settings = api.Settings
 export type NewProjectRequest = api.NewProjectRequest
+export type ExternalEnv = api.ExternalEnv
+export type PortConflict = api.PortConflict
+export type ImportPlan = api.ImportPlan
+export type ImportSite = api.ImportSite
+export type ImportDatabase = api.ImportDatabase
+
+export interface MySQLSource {
+  host: string
+  port: number
+  user: string
+  password: string
+}
+
+export interface ImportRequest {
+  kind: string
+  parkDirs: string[]
+  sites: string[]
+  databases: string[]
+  overwrite: boolean
+  installPhp: boolean
+  keepSecure: boolean
+  mysql?: MySQLSource | null
+}
+
+/** progress task for an import is IMPORT_TASK_PREFIX + kind */
+export const IMPORT_TASK_PREFIX = 'import:'
+export const EnvKind = {XAMPP: 'xampp', Herd: 'herd', Laragon: 'laragon', WAMP: 'wamp', MySQL: 'mysql'} as const
+
+/** Short product names for environment kinds (conflicts only carry the kind). */
+export const ENV_NAMES: Record<string, string> = {
+  xampp: 'XAMPP',
+  herd: 'Herd',
+  laragon: 'Laragon',
+  wamp: 'WampServer',
+  mysql: 'MySQL server',
+}
+
+/** Kinds whose own servers AMPLS can stop on request. */
+export const STOPPABLE_KINDS = ['xampp', 'herd', 'laragon', 'wamp']
 
 export interface Progress {
   task: string
@@ -37,6 +76,9 @@ export const backend = {
   SavePHPSettings: (s: {version: string; ini: Record<string, string>; extensions: Extension[]}) =>
     App.SavePHPSettings(api.PHPSettings.createFrom(s)),
   SaveSettings: (s: Settings) => App.SaveSettings(api.Settings.createFrom(s)),
+  // the generated binding types src as non-null; nil is valid for non-MySQL kinds
+  ScanImport: (kind: string, src: MySQLSource | null) => App.ScanImport(kind, src as api.MySQLSource),
+  RunImport: (r: ImportRequest) => App.RunImport(api.ImportRequest.createFrom(r)),
 }
 
 export function onProgress(fn: (p: Progress) => void): () => void {

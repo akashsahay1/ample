@@ -10,6 +10,10 @@ export function CreateDatabase(arg1) {
   return window['go']['main']['App']['CreateDatabase'](arg1);
 }
 
+export function DetectEnvironments() {
+  return window['go']['main']['App']['DetectEnvironments']();
+}
+
 export function DropDatabase(arg1) {
   return window['go']['main']['App']['DropDatabase'](arg1);
 }
@@ -94,6 +98,10 @@ export function Park(arg1) {
   return window['go']['main']['App']['Park'](arg1);
 }
 
+export function PortConflicts() {
+  return window['go']['main']['App']['PortConflicts']();
+}
+
 export function Quit() {
   return window['go']['main']['App']['Quit']();
 }
@@ -114,6 +122,10 @@ export function RestartService(arg1) {
   return window['go']['main']['App']['RestartService'](arg1);
 }
 
+export function RunImport(arg1) {
+  return window['go']['main']['App']['RunImport'](arg1);
+}
+
 export function SaveFile(arg1, arg2) {
   return window['go']['main']['App']['SaveFile'](arg1, arg2);
 }
@@ -124,6 +136,10 @@ export function SavePHPSettings(arg1) {
 
 export function SaveSettings(arg1) {
   return window['go']['main']['App']['SaveSettings'](arg1);
+}
+
+export function ScanImport(arg1, arg2) {
+  return window['go']['main']['App']['ScanImport'](arg1, arg2);
 }
 
 export function SelectDirectory(arg1) {
@@ -164,6 +180,10 @@ export function StartService(arg1) {
 
 export function StopAll() {
   return window['go']['main']['App']['StopAll']();
+}
+
+export function StopEnvironment(arg1) {
+  return window['go']['main']['App']['StopEnvironment'](arg1);
 }
 
 export function StopService(arg1) {

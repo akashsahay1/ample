@@ -4,6 +4,7 @@ import {WindowMinimise, WindowToggleMaximise} from '../../wailsjs/runtime/runtim
 import {backend, hasBackend} from '../lib/api'
 import {Route, useApp} from '../state/AppState'
 import {Button, Modal} from './ui'
+import {blockedSummary} from './ConflictBanner'
 
 export function Logo({size = 18}: {size?: number}) {
   return (
@@ -72,6 +73,11 @@ const I = {
       <path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
     </svg>
   ),
+  import: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+      <path d="M12 3v12M7 10l5 5 5-5M4 19h16" />
+    </svg>
+  ),
   logs: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
       <path d="M4 6h16M4 12h16M4 18h10" />
@@ -90,16 +96,18 @@ const NAV: [Route, string][] = [
   ['sites', 'Sites'],
   ['php', 'PHP Versions'],
   ['mysql', 'MySQL'],
+  ['import', 'Import'],
   ['logs', 'Logs'],
   ['settings', 'Settings'],
 ]
 
 export function Sidebar() {
-  const {route, go, overview} = useApp()
+  const {route, go, overview, conflicts} = useApp()
   const services = overview?.services ?? []
   const stopped = services.filter(s => !s.running).length
   let dot = '#3FB57A'
   let label = 'All services running'
+  let sub: string | null = null
   if (!overview) {
     dot = '#9A9EA8'
     label = hasBackend() ? 'Checking services…' : 'Backend not connected'
@@ -109,6 +117,12 @@ export function Sidebar() {
   } else if (stopped > 0) {
     dot = '#F2B544'
     label = `${stopped} stopped`
+  }
+  const blocked = overview ? blockedSummary(conflicts, services.filter(s => !s.running).map(s => s.name)) : null
+  if (blocked) {
+    dot = '#F2B544'
+    label = blocked.label
+    sub = blocked.sub
   }
   return (
     <nav className="flex w-56 shrink-0 flex-col gap-1 bg-shell px-3 py-4" aria-label="Main">
@@ -129,9 +143,13 @@ export function Sidebar() {
           <span className="h-2 w-2 rounded-full" style={{background: dot}} />
           {label}
         </div>
-        <div className="truncate text-xs text-shell-muted">
-          AMPLS {overview?.appVersion ?? '1.0.0'}
-          {overview?.home ? ` · ${overview.home}` : ''}
+        <div className="truncate text-xs text-shell-muted" title={sub ?? undefined}>
+          {sub ?? (
+            <>
+              AMPLS {overview?.appVersion ?? '1.0.0'}
+              {overview?.home ? ` · ${overview.home}` : ''}
+            </>
+          )}
         </div>
       </button>
     </nav>

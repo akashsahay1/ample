@@ -5,6 +5,7 @@ import {basename, copyText, frameworkLabel, shortPath, slug} from '../lib/format
 import {useApp} from '../state/AppState'
 import {useLoad} from '../state/useLoad'
 import {Button, Empty, IconButton, PageHeader, Toggle} from '../components/ui'
+import ConflictBanner from '../components/ConflictBanner'
 
 const ROW = 'grid grid-cols-[minmax(0,1.3fr)_minmax(0,1.6fr)_130px_110px_150px] items-center gap-4 px-5'
 
@@ -173,6 +174,7 @@ export default function Sites() {
 
   return (
     <>
+      <ConflictBanner />
       <PageHeader
         title="Sites"
         subtitle={
