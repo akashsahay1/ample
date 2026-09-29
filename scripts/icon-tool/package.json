@@ -1,0 +1,8 @@
+{
+  "name": "ampls-icon-tool",
+  "private": true,
+  "type": "module",
+  "description": "Regenerates AMPLS icons (PNG/ICO/ICNS/BMP) from assets/icon/*.svg",
+  "scripts": { "generate": "node generate.mjs" },
+  "dependencies": { "@resvg/resvg-js": "^2.6.2", "pngjs": "^7.0.0" }
+}

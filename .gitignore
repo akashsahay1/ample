@@ -1,3 +1,8 @@
 build/bin
 node_modules
 frontend/dist
+.devhome/
+.devbin/
+dist/
+scripts/icon-tool/node_modules/
+*.part
