@@ -58,7 +58,7 @@ func RenderIni(port int, home string) string {
 	w("collation-server=utf8mb4_0900_ai_ci")
 	w("max_allowed_packet=256M")
 	w("innodb_buffer_pool_size=256M")
-	w("innodb_log_file_size=64M")
+	w("innodb_redo_log_capacity=128M")
 	w("max_connections=200")
 	w("sql_mode=ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION")
 	w("")
@@ -113,14 +113,26 @@ func Initialize() error {
 	if err := os.MkdirAll(paths.DataDir(), 0o755); err != nil {
 		return fmt.Errorf("mysql: initialize: %w", err)
 	}
+	// Initialize into a staging dir and rename on success, so an interrupted
+	// init never leaves a half-built datadir that looks initialized.
+	stage := paths.MySQLDataDir() + ".init"
+	os.RemoveAll(stage)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, MysqldPath(), "--defaults-file="+slash(IniPath()), "--initialize-insecure", "--console")
+	cmd := exec.CommandContext(ctx, MysqldPath(), "--defaults-file="+slash(IniPath()), "--datadir="+slash(stage), "--initialize-insecure", "--console")
 	cmd.Dir = filepath.Dir(MysqldPath())
 	services.Hide(cmd)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
+		os.RemoveAll(stage)
 		return fmt.Errorf("mysql: initialize: %v: %s", err, lastLines(string(out), 10))
+	}
+	if _, err := os.Stat(filepath.Join(stage, "mysql.ibd")); err != nil {
+		os.RemoveAll(stage)
+		return fmt.Errorf("mysql: initialize: datadir not created: %s", lastLines(string(out), 10))
+	}
+	if err := os.Rename(stage, paths.MySQLDataDir()); err != nil {
+		return fmt.Errorf("mysql: initialize: %w", err)
 	}
 	if !Initialized() {
 		return fmt.Errorf("mysql: initialize: datadir not created: %s", lastLines(string(out), 10))
