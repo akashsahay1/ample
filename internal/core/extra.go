@@ -13,7 +13,6 @@ import (
 	"ampls/internal/api"
 	"ampls/internal/certs"
 	"ampls/internal/config"
-	"ampls/internal/hosts"
 	"ampls/internal/mysql"
 	"ampls/internal/paths"
 	"ampls/internal/php"
@@ -314,7 +313,7 @@ func tail(path string, n int) (string, error) {
 
 type SetupOptions struct {
 	ParkDefault    bool // create and park %USERPROFILE%\AMPLS\Sites
-	TrustCAMachine bool // add the CA to the machine Root store (installer runs elevated)
+	TrustCAMachine bool // add the CA to the machine Root store (needs admin; the installer uses `ampls trust --machine` instead)
 }
 
 // Setup prepares a freshly installed (or upgraded) data directory. Idempotent.
@@ -395,21 +394,12 @@ func (c *Core) Setup(opts SetupOptions, log func(string)) error {
 		}
 	}
 	if _, err := os.Stat(apache.HttpdPath()); err == nil {
-		log("Writing Apache configuration")
-		// Hosts are written directly below; hosts.Request would wait for the
-		// helper service, which the installer only registers after setup.
-		if err := c.syncOpts(false, false); err != nil {
+		// The installer runs setup as the original (unelevated) user after the
+		// hosts helper service is running, so hosts entries go through it.
+		log("Writing Apache configuration and hosts entries")
+		if err := c.syncOpts(false, true); err != nil {
 			return err
 		}
-	}
-	// The installer runs elevated, so write hosts entries directly.
-	ss, _ := c.discover(cfg)
-	var domains []string
-	for _, s := range ss {
-		domains = append(domains, s.Domain)
-	}
-	if err := hosts.Apply(domains); err != nil {
-		log("warning: could not update hosts file: " + err.Error())
 	}
 	log("Done")
 	return nil

@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"ampls/internal/core"
+	"ampls/internal/certs"
 	"ampls/internal/hosts"
 	"ampls/internal/paths"
 )
@@ -67,6 +68,28 @@ Examples:
 	setup.Flags().BoolVar(&setupOpts.ParkDefault, "park-default", false, "create and park ~/AMPLS/Sites")
 	setup.Flags().BoolVar(&setupOpts.TrustCAMachine, "trust-ca-machine", false, "trust the AMPLS CA machine-wide (requires admin)")
 
+	var trustMachine bool
+	trust := &cobra.Command{
+		Use:   "trust",
+		Short: "Trust the AMPLS certificate authority for HTTPS sites",
+		Long: "Create the local AMPLS certificate authority if needed and add it to the\ncurrent user's trusted root store, so browsers accept secured sites.\n\n" +
+			"--machine adds the existing CA to the machine store instead (requires admin;\nthe installer uses it). It never creates a CA, so the key stays owned by the user.\n\nExamples:\n  ampls trust\n  ampls trust --machine",
+		GroupID: "misc",
+		Args:    cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if trustMachine {
+				if err := certs.TrustCA(true); err != nil {
+					return err
+				}
+			} else if err := backend().TrustCA(); err != nil {
+				return err
+			}
+			ok("AMPLS certificate authority trusted")
+			return nil
+		},
+	}
+	trust.Flags().BoolVar(&trustMachine, "machine", false, "trust the existing CA machine-wide (requires admin)")
+
 	hostsCmd := &cobra.Command{
 		Use:     "hosts",
 		Short:   "Manage the AMPLS block in the system hosts file",
@@ -124,20 +147,7 @@ Examples:
 
 	root.AddCommand(
 		logs,
-		&cobra.Command{
-			Use:     "trust",
-			Short:   "Trust the AMPLS certificate authority for HTTPS sites",
-			Long:    "Create the local AMPLS certificate authority if needed and add it to the\ncurrent user's trusted root store, so browsers accept secured sites.\n\nExample:\n  ampls trust",
-			GroupID: "misc",
-			Args:    cobra.NoArgs,
-			RunE: func(cmd *cobra.Command, args []string) error {
-				if err := backend().TrustCA(); err != nil {
-					return err
-				}
-				ok("AMPLS certificate authority trusted")
-				return nil
-			},
-		},
+		trust,
 		setup,
 		hostsCmd,
 		&cobra.Command{

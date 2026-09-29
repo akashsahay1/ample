@@ -72,8 +72,9 @@ Name: "autostart"; Description: "Start AMPLS when Windows starts"; Flags: unchec
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Dirs]
-; The GUI and CLI run unelevated and must be able to write everywhere in the data dir.
-Name: "{code:GetDataDir}"; Permissions: users-modify; Flags: uninsneveruninstall
+; Owner-only ACL is applied in CurStepChanged (SecureDataDir): the installing user gets Modify,
+; other users get nothing (the dir holds binaries others would run and the MySQL root password).
+Name: "{code:GetDataDir}"; Flags: uninsneveruninstall
 
 [Files]
 Source: "{#Root}\dist\app\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion; AfterInstall: WriteDataDirFile
@@ -364,7 +365,44 @@ function SetupFlags: string;
 begin
   Result := '';
   if WizardIsTaskSelected('parksites') then Result := Result + ' --park-default';
-  if WizardIsTaskSelected('trustca') then Result := Result + ' --trust-ca-machine';
+end;
+
+{ Runs as the user who started setup (not the elevated admin), so the data dir,
+  the Sites folder and the CA key belong to them. }
+function RunAsUser(Exe, Params, Status: string): Integer;
+begin
+  if Status <> '' then WizardForm.StatusLabel.Caption := Status;
+  Log('Running as original user: "' + Exe + '" ' + Params);
+  if not ExecAsOriginalUser(Exe, Params, '', SW_HIDE, ewWaitUntilTerminated, Result) then
+    Result := -1;
+  Log(Format('  exit code %d', [Result]));
+end;
+
+{ Break inheritance (C:\ grants Authenticated Users Modify to new subfolders) and give
+  only SYSTEM, Administrators and the installing user access. }
+{ DOMAIN\user of the account that started setup. With over-the-shoulder UAC the elevated
+  account differs, so ask the original user's own process (whoami) while the new data dir
+  still inherits write access from C:\. }
+function OriginalUserName(Home: string): string;
+var
+  F: string;
+  S: AnsiString;
+  Code: Integer;
+begin
+  Result := GetUserNameString;
+  F := Home + '\installer-user.txt';
+  if ExecAsOriginalUser(ExpandConstant('{sys}\cmd.exe'), '/c whoami > "' + F + '"', '', SW_HIDE, ewWaitUntilTerminated, Code)
+     and LoadStringFromFile(F, S) and (Trim(String(S)) <> '') then
+    Result := Trim(String(S));
+  DeleteFile(F);
+  Log('Data dir owner: ' + Result);
+end;
+
+procedure SecureDataDir(Home: string);
+begin
+  RunHidden(ExpandConstant('{sys}\icacls.exe'),
+    '"' + Home + '" /inheritance:r /grant:r *S-1-5-18:(OI)(CI)F *S-1-5-32-544:(OI)(CI)F "' +
+    OriginalUserName(Home) + '":(OI)(CI)M /T /C /Q', 'Securing the data folder...');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
@@ -402,18 +440,26 @@ begin
   else if WizardIsTaskSelected('shimsother\after') then
     AddToPath(HKCU, Shims, False);   { end of the user PATH: existing php keeps winning }
 
-  Code := RunHidden(Bin + '\ampls.exe', 'setup --home "' + Home + '"' + SetupFlags,
-    'Configuring Apache, PHP and MySQL (this can take a minute)...');
-  if Code <> 0 then
-    SuppressibleMsgBox(Format('AMPLS setup did not finish (code %d).' + #13#10 +
-      'You can re-run it later from a terminal:  ampls setup --home "%s"', [Code, Home]), mbError, MB_OK, IDOK);
+  SecureDataDir(Home);
 
+  { elevated: the helper must run before setup so setup's hosts request is applied by it }
   Code := RunHidden(Bin + '\ampls-helper.exe', 'install --home "' + Home + '"',
     'Installing the AMPLS hosts helper service...');
   if Code = 0 then
     RunHidden(ExpandConstant('{sys}\sc.exe'), 'start {#HelperService}', '')
   else
     Log('ampls-helper install failed; hosts edits will fall back to UAC prompts');
+
+  { unelevated: never write as admin into a user-writable tree }
+  Code := RunAsUser(Bin + '\ampls.exe', 'setup --home "' + Home + '"' + SetupFlags,
+    'Configuring Apache, PHP and MySQL (this can take a minute)...');
+  if Code <> 0 then
+    SuppressibleMsgBox(Format('AMPLS setup did not finish (code %d).' + #13#10 +
+      'You can re-run it later from a terminal:  ampls setup --home "%s"', [Code, Home]), mbError, MB_OK, IDOK);
+
+  { elevated: trust the CA the user just created (verified against its key, never created here) }
+  if WizardIsTaskSelected('trustca') then
+    RunHidden(Bin + '\ampls.exe', 'trust --machine --home "' + Home + '"', 'Trusting the AMPLS HTTPS certificate...');
 
   WizardForm.ProgressGauge.Style := npbstNormal;
 end;

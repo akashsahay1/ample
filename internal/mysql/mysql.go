@@ -54,6 +54,8 @@ func RenderIni(port int, home string) string {
 	w("log-error=%q", j("logs", "mysql.log"))
 	w("pid-file=%q", j("run", "mysqld-internal.pid"))
 	w("tmpdir=%q", j("tmp"))
+	// LOAD DATA / SELECT INTO OUTFILE only inside this folder (defence in depth).
+	w("secure-file-priv=%q", j("data", "mysql-files"))
 	w("character-set-server=utf8mb4")
 	w("collation-server=utf8mb4_0900_ai_ci")
 	w("max_allowed_packet=256M")
@@ -74,7 +76,7 @@ func WriteConfig(port int) error {
 	if port <= 0 {
 		port = 3306
 	}
-	for _, d := range []string{paths.ConfDir(), paths.LogsDir(), paths.RunDir(), paths.TmpDir()} {
+	for _, d := range []string{paths.ConfDir(), paths.LogsDir(), paths.RunDir(), paths.TmpDir(), filepath.Join(paths.DataDir(), "mysql-files")} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
 			return fmt.Errorf("mysql: write config: %w", err)
 		}
