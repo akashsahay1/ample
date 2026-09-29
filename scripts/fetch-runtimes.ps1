@@ -184,6 +184,17 @@ Get-ChildItem $mysql -Recurse -Include '*.pdb' -File | Remove-Item -Force
 Get-ChildItem (Join-Path $mysql 'bin') -Filter '*debug*' -File -ErrorAction SilentlyContinue | Remove-Item -Force
 Get-ChildItem (Join-Path $mysql 'lib') -Filter '*.lib' -File -ErrorAction SilentlyContinue | Remove-Item -Force
 Remove-Item -Recurse -Force (Join-Path $mysql 'lib\plugin\debug') -ErrorAction SilentlyContinue
+# Not needed for a local dev server: MeCab Japanese full-text dictionaries (~130 MB), import libs,
+# the GUI configurator, benchmarking/keyring-migration/MyISAM maintenance tools, Perl scripts,
+# and enterprise client auth plugins (OCI, Kerberos, LDAP).
+Remove-Item -Recurse -Force (Join-Path $mysql 'lib\mecab') -ErrorAction SilentlyContinue
+Get-ChildItem (Join-Path $mysql 'bin') -Include '*.lib', '*.pl' -File -Recurse | Remove-Item -Force
+foreach ($f in 'mysql_configurator.exe', 'mysqlslap.exe', 'mysql_migrate_keyring.exe', 'myisam_ftdump.exe', 'myisamlog.exe', 'myisampack.exe') {
+    Remove-Item -Force (Join-Path $mysql "bin\$f") -ErrorAction SilentlyContinue
+}
+foreach ($f in 'authentication_oci_client.dll', 'authentication_kerberos_client.dll', 'authentication_ldap_sasl_client.dll') {
+    Remove-Item -Force (Join-Path $mysql "lib\plugin\$f") -ErrorAction SilentlyContinue
+}
 foreach ($req in 'bin\mysqld.exe', 'bin\mysql.exe', 'bin\mysqldump.exe', 'bin\mysqladmin.exe', 'share', 'lib\plugin') {
     if (-not (Test-Path (Join-Path $mysql $req))) { throw "MySQL payload is missing $req" }
 }

@@ -14,8 +14,9 @@ import (
 	"ampls/internal/paths"
 )
 
-// Status of a managed service.
-type Status struct {
+// State of a managed service. (CONTRACTS.md named this type Status, which
+// collides with func Status; callers use services.Status(name).Running.)
+type State struct {
 	Running bool
 	PID     int
 }
@@ -46,15 +47,15 @@ func readPid(name string) (int, string) {
 
 // Status reports whether the service recorded in run/<name>.pid is alive and
 // still the expected executable.
-func Status(name string) Status {
+func Status(name string) State {
 	pid, exe := readPid(name)
 	if pid <= 0 {
-		return Status{}
+		return State{}
 	}
 	if !processMatches(pid, exe) {
-		return Status{}
+		return State{}
 	}
-	return Status{Running: true, PID: pid}
+	return State{Running: true, PID: pid}
 }
 
 // Start launches exe detached with stdout/stderr appended to logFile and
