@@ -46,6 +46,7 @@ individual folders can be linked, pinned to a PHP version and served over HTTPS.
 	addSiteCommands(root)
 	addPHPCommands(root)
 	addDBCommands(root)
+	addEnvCommands(root)
 	addMiscCommands(root)
 	root.SetHelpCommandGroupID("misc")
 	return root

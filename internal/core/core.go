@@ -18,6 +18,7 @@ import (
 	"ampls/internal/api"
 	"ampls/internal/certs"
 	"ampls/internal/config"
+	"ampls/internal/external"
 	"ampls/internal/hosts"
 	"ampls/internal/mysql"
 	"ampls/internal/paths"
@@ -336,6 +337,13 @@ func (c *Core) restartApache() error {
 
 func portFree(port int, what string) error {
 	if used, owner := services.PortInUse(port); used {
+		if c, ok := external.PortOwner(port); ok && c.Env != external.EnvAMPLS {
+			hint := ""
+			if _, stoppable := envTitles[c.Env]; stoppable {
+				hint = fmt.Sprintf(": stop it (ampls env:stop %s) or change the AMPLS port in Settings", c.Env)
+			}
+			return fmt.Errorf("%s port %d is already in use by %s%s", what, port, describeOwner(c), hint)
+		}
 		if owner != "" {
 			return fmt.Errorf("%s port %d is already in use by %s", what, port, owner)
 		}
