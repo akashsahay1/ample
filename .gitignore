@@ -6,3 +6,4 @@ frontend/dist
 dist/
 scripts/icon-tool/node_modules/
 *.part
+/*.exe
