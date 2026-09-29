@@ -211,3 +211,28 @@ func TestNestedSiteDeepestWins(t *testing.T) {
 		t.Errorf("got %q", s.Name)
 	}
 }
+
+func TestSafePath(t *testing.T) {
+	for _, p := range []string{"/x/a\"b", "/x/a\nb", "/x/a\rb", "/x/${HOME}", "", "/x/a\x00"} {
+		if SafePath(p) {
+			t.Errorf("SafePath(%q) = true", p)
+		}
+	}
+	for _, p := range []string{filepath.Join("x", "My Blog (2)"), filepath.Join("x", "café$1")} {
+		if !SafePath(p) {
+			t.Errorf("SafePath(%q) = false", p)
+		}
+	}
+}
+
+func TestDiscoverSkipsUnsafeLinkPaths(t *testing.T) {
+	cfg, _, _ := testCfg(t)
+	cfg.Links = append(cfg.Links, config.Link{Name: "evil", Path: t.TempDir() + "\nLoadModule x y"})
+	cfg.Sites["shop"] = config.SiteSettings{DocRoot: "pub\"\nInclude x"}
+	all, _ := Discover(cfg)
+	for _, s := range all {
+		if s.Name == "evil" || s.Name == "shop" {
+			t.Errorf("unsafe site %q discovered: %+v", s.Name, s)
+		}
+	}
+}

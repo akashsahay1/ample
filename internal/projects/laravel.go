@@ -102,8 +102,9 @@ func quoteEnv(v string) string {
 	if v == "" {
 		return ""
 	}
-	if strings.ContainsAny(v, " \t#\"'$\\=`") {
-		return `"` + strings.NewReplacer(`\`, `\\`, `"`, `\"`, `$`, `\$`).Replace(v) + `"`
+	if strings.ContainsAny(v, " \t#\"'$\\=`\r\n") {
+		// newlines are escaped so a value can never start a new KEY= line
+		return `"` + strings.NewReplacer(`\`, `\\`, `"`, `\"`, `$`, `\$`, "\r", `\r`, "\n", `\n`).Replace(v) + `"`
 	}
 	return v
 }

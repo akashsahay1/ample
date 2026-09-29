@@ -331,18 +331,27 @@ func SetRootPassword(port int, oldPassword, newPassword string) error {
 }
 
 // clientDefaults writes a temporary [client] option file holding the password
-// so it never appears on a command line. Caller removes it.
+// so it never appears on a command line. It goes to the per-user temp dir
+// (%TEMP% is private to the user), not <Home>/tmp, which every local user can
+// read. Caller removes it.
 func clientDefaults(port int, password string) (string, error) {
-	if err := os.MkdirAll(paths.TmpDir(), 0o755); err != nil {
-		return "", err
-	}
-	f, err := os.CreateTemp(paths.TmpDir(), "client-*.cnf")
+	f, err := os.CreateTemp("", "ampls-client-*.cnf")
 	if err != nil {
 		return "", err
 	}
-	pw := strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(password)
-	fmt.Fprintf(f, "[client]\nuser=root\npassword=\"%s\"\nhost=127.0.0.1\nport=%d\ndefault-character-set=utf8mb4\n", pw, port)
+	if _, err := f.WriteString(renderClientDefaults(port, password)); err != nil {
+		f.Close()
+		os.Remove(f.Name())
+		return "", err
+	}
 	return f.Name(), f.Close()
+}
+
+// renderClientDefaults renders the option file; the password is escaped so a
+// newline or quote in it cannot add further options.
+func renderClientDefaults(port int, password string) string {
+	pw := strings.NewReplacer(`\`, `\\`, `"`, `\"`, "\n", `\n`, "\r", `\r`, "\t", `\t`, "\x00", "").Replace(password)
+	return fmt.Sprintf("[client]\nuser=root\npassword=\"%s\"\nhost=127.0.0.1\nport=%d\ndefault-character-set=utf8mb4\n", pw, port)
 }
 
 // Import loads an .sql file into database (created if missing).

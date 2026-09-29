@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -30,6 +31,9 @@ type Request struct {
 	Secure bool   // https APP_URL
 }
 
+// dbNameRe matches mysql.ValidName: the name ends up in .env / wp-config.php.
+var dbNameRe = regexp.MustCompile(`^[A-Za-z0-9_]{1,64}$`)
+
 // ProgressFunc receives human-readable progress; pct is 0..100 or -1 (indeterminate).
 type ProgressFunc = func(msg string, pct float64)
 
@@ -43,6 +47,9 @@ func Create(ctx context.Context, r Request, progress func(msg string, pct float6
 	}
 	if r.Dir == "" {
 		return "", errors.New("projects: parent directory is required")
+	}
+	if r.DB != "" && !dbNameRe.MatchString(r.DB) {
+		return "", fmt.Errorf("projects: invalid database name %q (use letters, digits and _)", r.DB)
 	}
 	if r.DBPort == 0 {
 		r.DBPort = 3306

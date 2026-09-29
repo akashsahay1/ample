@@ -166,3 +166,100 @@ type Backend interface {
 
 	TrustCA() error
 }
+
+// ---------- Coexistence & import (XAMPP, Laravel Herd, Laragon, WAMP) ----------
+
+// External environment kinds.
+const (
+	EnvXAMPP   = "xampp"
+	EnvHerd    = "herd"
+	EnvLaragon = "laragon"
+	EnvWAMP    = "wamp"
+	EnvMySQL   = "mysql" // any reachable MySQL/MariaDB server (import source only)
+)
+
+// ExternalEnv is another local dev stack found on this machine.
+type ExternalEnv struct {
+	Kind      string   `json:"kind"`    // EnvXAMPP | EnvHerd | ...
+	Name      string   `json:"name"`    // "XAMPP 8.2.12", "Laravel Herd"
+	Path      string   `json:"path"`    // install/config root
+	Running   bool     `json:"running"` // any of its servers is running
+	Ports     []int    `json:"ports"`   // ports its running processes listen on
+	PHP       string   `json:"php"`     // its php.exe on PATH or bundled version, if known
+	OnPath    bool     `json:"onPath"`  // its php is first on PATH
+	CanImport bool     `json:"canImport"`
+	CanStop   bool     `json:"canStop"`
+	Sites     int      `json:"sites"`     // number of importable sites
+	Databases bool     `json:"databases"` // has importable databases
+	Notes     []string `json:"notes"`
+}
+
+// PortConflict describes a port AMPLS needs that another program holds.
+type PortConflict struct {
+	Port    int    `json:"port"`
+	Service string `json:"service"` // api.ServiceApache | api.ServiceMySQL
+	Process string `json:"process"` // "httpd.exe"
+	Path    string `json:"path"`    // full exe path if known
+	Env     string `json:"env"`     // owning environment kind if recognised, else ""
+}
+
+// ImportSite is one site an import would bring over.
+type ImportSite struct {
+	Name     string `json:"name"`   // proposed AMPLS site name (slug)
+	Domain   string `json:"domain"` // original domain, e.g. "blog.test" or "localhost/blog"
+	Path     string `json:"path"`   // project folder (served in place, never copied)
+	DocRoot  string `json:"docRoot"`
+	PHP      string `json:"php"` // pinned PHP minor in the source ("" = default)
+	Secure   bool   `json:"secure"`
+	Source   string `json:"source"`   // "parked" | "link" | "vhost" | "htdocs"
+	Conflict string `json:"conflict"` // why it can't be imported as-is (name taken, ...); "" = ok
+}
+
+type ImportDatabase struct {
+	Name      string `json:"name"`
+	SizeBytes int64  `json:"sizeBytes"`
+	Exists    bool   `json:"exists"` // a database with this name already exists in AMPLS
+}
+
+// ImportPlan is the preview shown before anything is changed.
+type ImportPlan struct {
+	Kind       string           `json:"kind"`
+	Source     string           `json:"source"`     // human description, e.g. "C:\xampp"
+	ParkedDirs []string         `json:"parkedDirs"` // folders to park (Herd parked paths, XAMPP htdocs)
+	Sites      []ImportSite     `json:"sites"`
+	Databases  []ImportDatabase `json:"databases"`
+	MissingPHP []string         `json:"missingPhp"` // PHP minors used by sites but not installed in AMPLS
+	Notes      []string         `json:"notes"`
+}
+
+// MySQLSource are connection details for importing from a running server.
+type MySQLSource struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	User     string `json:"user"`
+	Password string `json:"password"`
+}
+
+type ImportRequest struct {
+	Kind       string       `json:"kind"`
+	ParkDirs   []string     `json:"parkDirs"`   // subset of plan.ParkedDirs
+	Sites      []string     `json:"sites"`      // ImportSite.Path values to link
+	Databases  []string     `json:"databases"`  // names to copy
+	Overwrite  bool         `json:"overwrite"`  // replace existing AMPLS databases of the same name
+	InstallPHP bool         `json:"installPhp"` // install MissingPHP versions and keep per-site pins
+	KeepSecure bool         `json:"keepSecure"` // re-secure sites that were HTTPS in the source
+	MySQL      *MySQLSource `json:"mysql"`      // required for EnvMySQL / Herd Pro; nil otherwise
+}
+
+// ImportTask is the progress task id prefix: "import:<kind>".
+const ImportTaskPrefix = "import:"
+
+// Coexistence is implemented by the core alongside Backend. The GUI checks for it
+// with a type assertion so the mock and core can adopt it independently.
+type Coexistence interface {
+	DetectEnvironments() ([]ExternalEnv, error)
+	PortConflicts() ([]PortConflict, error) // for the ports AMPLS is configured to use
+	StopEnvironment(kind string) error      // stop XAMPP/Herd/... servers (user-initiated only)
+	ScanImport(kind string, src *MySQLSource) (ImportPlan, error)
+	RunImport(req ImportRequest, progress ProgressFunc) error
+}

@@ -91,3 +91,27 @@ func TestFile(t *testing.T) {
 		t.Fatal(sum)
 	}
 }
+
+func TestUnzipSlipVariants(t *testing.T) {
+	cases := []map[string]string{
+		{"top/a.txt": "x", "top/../../evil.txt": "x"},    // escapes after stripTopDir
+		{"top/a.txt": "x", `top/..\..\evil.txt`: "x"}, // backslash separators
+	}
+	for i, files := range cases {
+		dir := t.TempDir()
+		z := filepath.Join(dir, "a.zip")
+		makeZip(t, z, files)
+		if err := Unzip(z, filepath.Join(dir, "sub", "out"), true); err == nil {
+			t.Errorf("case %d: expected zip-slip error", i)
+		}
+		if _, err := os.Stat(filepath.Join(dir, "evil.txt")); err == nil {
+			t.Errorf("case %d: wrote outside dest", i)
+		}
+	}
+	dir := t.TempDir()
+	z := filepath.Join(dir, "b.zip")
+	makeZip(t, z, map[string]string{"Apache24/bin/x": "x", "Apache24/../evil.txt": "x"})
+	if err := UnzipSubdir(z, "Apache24", filepath.Join(dir, "out")); err == nil {
+		t.Error("UnzipSubdir: expected zip-slip error")
+	}
+}

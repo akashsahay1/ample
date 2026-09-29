@@ -53,7 +53,7 @@ New-Item -ItemType Directory -Force $Bin | Out-Null
 Write-Step 'Go binaries'
 $targets = @(
     @{ Pkg = 'cmd/ampls';        Out = 'ampls.exe' },
-    @{ Pkg = 'cmd/php-shim';     Out = 'php.exe' },
+    @{ Pkg = 'cmd/php-shim';     Out = 'php.exe'; Dir = 'shims' },
     @{ Pkg = 'cmd/ampls-helper'; Out = 'ampls-helper.exe' }
 )
 Push-Location $Root
@@ -61,7 +61,9 @@ try {
     foreach ($t in $targets) {
         $dir = Join-Path $Root $t.Pkg
         if (-not (Test-Path (Join-Path $dir '*.go'))) { throw "missing Go package ./$($t.Pkg) (no .go files in $dir)" }
-        Invoke-Checked $Go @('build', '-trimpath', '-ldflags', "-s -w -X main.version=$Version", '-o', (Join-Path $Bin $t.Out), "./$($t.Pkg)")
+        $outDir = if ($t.ContainsKey('Dir')) { Join-Path $App $t.Dir } else { $Bin }
+        New-Item -ItemType Directory -Force $outDir | Out-Null
+        Invoke-Checked $Go @('build', '-trimpath', '-ldflags', "-s -w -X main.version=$Version", '-o', (Join-Path $outDir $t.Out), "./$($t.Pkg)")
     }
 } finally { Pop-Location }
 
@@ -86,8 +88,12 @@ if (-not (Test-Path (Join-Path $Dist 'payload\versions.json')) -or -not (Test-Pa
 
 # ---------------------------------------------------------------- (c) composer
 Write-Step 'Composer'
-Copy-Item -Force (Join-Path $Dist 'bin-extra\composer.phar') $Bin
-Copy-Item -Force (Join-Path $Dist 'bin-extra\composer.bat') $Bin
+$Shims = Join-Path $App 'shims'
+New-Item -ItemType Directory -Force $Shims | Out-Null
+Copy-Item -Force (Join-Path $Dist 'bin-extra\composer.phar') $Shims
+Copy-Item -Force (Join-Path $Dist 'bin-extra\composer.bat') $Shims
+# earlier layouts shipped these in bin\
+Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $Bin 'php.exe'), (Join-Path $Bin 'composer.phar'), (Join-Path $Bin 'composer.bat')
 
 # ---------------------------------------------------------------- (e) installer
 if (-not $SkipInstaller) {

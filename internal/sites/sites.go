@@ -45,6 +45,29 @@ func Slug(folder string) string {
 	return s
 }
 
+// SafePath reports whether p can be written into generated Apache config as a
+// quoted path. Folder names come from the filesystem (on macOS they may contain
+// quotes, backslashes and newlines), so paths with double quotes, control
+// characters, Apache ${VAR} interpolation or (outside Windows) backslashes are
+// refused instead of being rendered, which would let a folder name inject
+// directives.
+func SafePath(p string) bool {
+	if p == "" || strings.Contains(p, `"`) || strings.Contains(p, "${") {
+		return false
+	}
+	// q() only escapes quotes; a trailing backslash would escape the closing
+	// quote (backslashes are separators on Windows and are converted to /).
+	if runtime.GOOS != "windows" && strings.HasSuffix(p, `\`) {
+		return false
+	}
+	for _, r := range p {
+		if r < 0x20 || r == 0x7f || r == 0x2028 || r == 0x2029 {
+			return false
+		}
+	}
+	return true
+}
+
 func isDir(p string) bool {
 	st, err := os.Stat(p)
 	return err == nil && st.IsDir()
@@ -133,7 +156,9 @@ func Discover(cfg *config.Config) ([]api.Site, error) {
 		if err != nil {
 			p = l.Path
 		}
-		byName[name] = build(cfg, name, p, true)
+		if s := build(cfg, name, p, true); SafePath(s.Path) && SafePath(s.DocRoot) {
+			byName[name] = s
+		}
 	}
 	for _, dir := range cfg.Parked {
 		entries, err := os.ReadDir(dir)
@@ -163,7 +188,9 @@ func Discover(cfg *config.Config) ([]api.Site, error) {
 			if _, dup := byName[name]; dup {
 				continue
 			}
-			byName[name] = build(cfg, name, full, false)
+			if s := build(cfg, name, full, false); SafePath(s.Path) && SafePath(s.DocRoot) {
+				byName[name] = s
+			}
 		}
 	}
 	out := make([]api.Site, 0, len(byName))

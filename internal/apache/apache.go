@@ -47,6 +47,9 @@ func StartArgs() []string {
 // WriteConfig writes conf/httpd.conf and conf/sites/*.conf, removing stale site files.
 func WriteConfig(opts Options, vhosts []VHost) error {
 	opts = withDefaults(opts)
+	if err := checkConfigInputs(opts, paths.Home(), vhosts); err != nil {
+		return err
+	}
 	for _, d := range []string{paths.ConfDir(), paths.SitesConfDir(), paths.LogsDir(), paths.RunDir(), paths.TmpDir(), paths.WWWDir()} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
 			return fmt.Errorf("apache: write config: %w", err)

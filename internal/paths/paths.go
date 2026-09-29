@@ -76,14 +76,18 @@ func InstallDir() string {
 		exe = r
 	}
 	dir := filepath.Dir(exe)
-	if strings.EqualFold(filepath.Base(dir), "bin") {
+	if b := filepath.Base(dir); strings.EqualFold(b, "bin") || strings.EqualFold(b, "shims") {
 		return filepath.Dir(dir)
 	}
 	return dir
 }
 
-// BinDir holds the CLI, the php shim and composer; it is added to PATH.
+// BinDir holds the CLI and the hosts helper; it is added to PATH.
 func BinDir() string { return filepath.Join(InstallDir(), "bin") }
+
+// ShimsDir holds the php shim, composer.phar and composer.bat. It is on PATH only
+// when the user chose so in the installer (it may shadow Herd/XAMPP php).
+func ShimsDir() string { return filepath.Join(InstallDir(), "shims") }
 
 func ApacheDir() string          { return filepath.Join(Home(), "apache") }
 func PHPRoot() string            { return filepath.Join(Home(), "php") }
@@ -103,8 +107,8 @@ func PHPMyAdminDir() string      { return filepath.Join(AppsDir(), "phpmyadmin")
 func WWWDir() string             { return filepath.Join(Home(), "www") }
 func ConfigFile() string         { return filepath.Join(Home(), "config.json") }
 
-// ComposerPhar is bundled next to the CLI.
-func ComposerPhar() string { return filepath.Join(BinDir(), "composer.phar") }
+// ComposerPhar is bundled next to the php shim.
+func ComposerPhar() string { return filepath.Join(ShimsDir(), "composer.phar") }
 
 // DefaultSitesDir is the folder parked on first run (~/AMPLS/Sites).
 func DefaultSitesDir() string {
