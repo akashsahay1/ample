@@ -12,16 +12,16 @@ import (
 
 func TestSlug(t *testing.T) {
 	cases := map[string]string{
-		"My Blog":       "my-blog",
-		"blog":          "blog",
-		"Blog_v2":       "blog-v2",
-		"  spaced  ":    "spaced",
-		"a--b":          "a-b",
-		"--x--":         "x",
-		"Ünïcode":       "n-code",
-		"...":           "",
-		"123":           "123",
-		"Foo.Bar":       "foo-bar",
+		"My Blog":               "my-blog",
+		"blog":                  "blog",
+		"Blog_v2":               "blog-v2",
+		"  spaced  ":            "spaced",
+		"a--b":                  "a-b",
+		"--x--":                 "x",
+		"Ünïcode":               "n-code",
+		"...":                   "",
+		"123":                   "123",
+		"Foo.Bar":               "foo-bar",
 		strings.Repeat("a", 70): strings.Repeat("a", 63),
 	}
 	for in, want := range cases {

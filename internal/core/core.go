@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"ampls/internal/api"
 	"ampls/internal/apache"
+	"ampls/internal/api"
 	"ampls/internal/certs"
 	"ampls/internal/config"
 	"ampls/internal/hosts"
