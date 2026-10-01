@@ -1,7 +1,13 @@
-// Regenerates every AMPLS icon asset from the SVG sources in assets/icon/.
+// Regenerates every AMPLS icon asset from the launcher artwork assets/icon/ampls_launcher.png.
 //   cd scripts/icon-tool && npm install && node generate.mjs
-// Outputs (assets/icons/): app-<size>.png, app.ico, app.icns, tray-*.ico, installer-*.bmp
-// and copies app-1024.png -> build/appicon.png, app.ico -> build/windows/icon.ico (Wails).
+//
+// 1. Clean: drop the faint glow (alpha < 8) that pads the artwork, make the
+//    body fully opaque (it ships at alpha 253), crop tight to the artwork.
+//    The result is saved as assets/icon/ampls_launcher_clean.png (master).
+// 2. Outputs (assets/icons/): app-<size>.png, app.ico, app.icns, tray-*.ico,
+//    installer-wizard-*.bmp; copies app-1024.png -> build/appicon.png and
+//    app.ico -> build/windows/icon.ico (Wails), and the GUI/site logos.
+import sharp from 'sharp';
 import { Resvg } from '@resvg/resvg-js';
 import { PNG } from 'pngjs';
 import fs from 'node:fs';
@@ -10,32 +16,59 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '..', '..');
-const src = path.join(root, 'assets', 'icon');
+const srcDir = path.join(root, 'assets', 'icon');
 const out = path.join(root, 'assets', 'icons');
 fs.mkdirSync(out, { recursive: true });
 
-const svg = (name) => fs.readFileSync(path.join(src, name), 'utf8');
-const FULL = svg('ampls.svg');
-const S32 = svg('ampls-32.svg');
-const S16 = svg('ampls-16.svg');
+// ---------- 1. clean + crop the artwork
+const GLOW_CUTOFF = 8; // alpha below this is the soft halo: removed
+const SOLID_FROM = 250; // alpha at/above this becomes fully opaque
 
-// Render an SVG string at width x height; returns { png: Buffer, rgba: Buffer (straight alpha) }.
-function render(svgText, width, height = width) {
-  const r = new Resvg(svgText, {
-    fitTo: { mode: 'width', value: width },
-    font: { loadSystemFonts: true, defaultFontFamily: 'Segoe UI' },
-    shapeRendering: 2,
-  });
-  const png = r.render().asPng();
-  const img = PNG.sync.read(png);
-  if (img.width !== width || img.height !== height) {
-    throw new Error(`render size ${img.width}x${img.height} != ${width}x${height}`);
+const src = PNG.sync.read(fs.readFileSync(path.join(srcDir, 'ampls_launcher.png')));
+let x0 = src.width, y0 = src.height, x1 = -1, y1 = -1;
+for (let y = 0; y < src.height; y++) {
+  for (let x = 0; x < src.width; x++) {
+    const i = (y * src.width + x) * 4;
+    const a = src.data[i + 3];
+    if (a < GLOW_CUTOFF) {
+      src.data[i] = src.data[i + 1] = src.data[i + 2] = src.data[i + 3] = 0;
+      continue;
+    }
+    if (a >= SOLID_FROM) src.data[i + 3] = 255;
+    if (x < x0) x0 = x;
+    if (x > x1) x1 = x;
+    if (y < y0) y0 = y;
+    if (y > y1) y1 = y;
   }
-  return { png, rgba: img.data, width, height };
 }
+const cropW = x1 - x0 + 1, cropH = y1 - y0 + 1;
+const art = await sharp(PNG.sync.write(src))
+  .extract({ left: x0, top: y0, width: cropW, height: cropH })
+  .png()
+  .toBuffer();
+console.log(`artwork ${cropW}x${cropH} at (${x0},${y0}) of ${src.width}x${src.height}`);
 
-// App icon variant per size: simplified drawings for tiny sizes (per docs/design/Icon.dc.html).
-const appSvgFor = (size) => (size <= 16 ? S16 : size <= 32 ? S32 : FULL);
+// Square icon: artwork fitted inside a small, even margin (fraction of the side).
+// Tiny sizes get less margin so the mark stays as large as possible.
+const marginFor = (size) => (size <= 24 ? 0 : size <= 48 ? 0.02 : 0.04);
+
+async function iconRGBA(size, artBuf = art) {
+  const m = Math.round(size * marginFor(size));
+  const inner = size - 2 * m;
+  const { data } = await sharp(artBuf)
+    .resize(inner, inner, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: 'lanczos3' })
+    .extend({ top: m, bottom: m, left: m, right: m, background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  return { rgba: data, width: size, height: size };
+}
+const toPng = ({ rgba, width, height }) =>
+  sharp(rgba, { raw: { width, height, channels: 4 } }).png({ compressionLevel: 9 }).toBuffer();
+
+// Master: tight, square, 1024 with the standard margin.
+const master = await iconRGBA(1024);
+fs.writeFileSync(path.join(srcDir, 'ampls_launcher_clean.png'), await toPng(master));
 
 // ---------- ICO (DIB entries < 256 for max compatibility, PNG entry for 256)
 function dibEntry({ rgba, width, height }) {
@@ -110,61 +143,83 @@ function writeBmp24(file, { rgba, width, height }, bg = [255, 255, 255]) {
   fs.writeFileSync(file, b);
 }
 
-// ---------- app PNGs
+// ---------- 2. app icons
 const pngBySize = {};
+const icoImages = [];
 for (const s of [16, 24, 32, 48, 64, 128, 256, 512, 1024]) {
-  const img = render(appSvgFor(s), s);
+  const img = await iconRGBA(s);
+  img.png = await toPng(img);
   pngBySize[s] = img.png;
   fs.writeFileSync(path.join(out, `app-${s}.png`), img.png);
+  if (s <= 256) icoImages.push(img);
 }
-writeIco(path.join(out, 'app.ico'), [16, 24, 32, 48, 64, 128, 256].map((s) => render(appSvgFor(s), s)));
+writeIco(path.join(out, 'app.ico'), icoImages);
 writeIcns(path.join(out, 'app.icns'), pngBySize);
 
-// ---------- tray icons
-for (const state of ['running', 'stopped', 'error']) {
-  const t = svg(`tray-${state}.svg`);
-  writeIco(path.join(out, `tray-${state}.ico`), [16, 20, 24, 32].map((s) => render(t, s)));
-  fs.writeFileSync(path.join(out, `tray-${state}-32.png`), render(t, 32).png);
+// ---------- tray icons: the mark plus a status dot (bottom-right, dark ring for contrast)
+const dots = { running: '#3FB57A', stopped: '#8A8E97', error: '#E8622C' };
+for (const [state, color] of Object.entries(dots)) {
+  const imgs = [];
+  for (const s of [16, 20, 24, 32]) {
+    const base = await iconRGBA(s);
+    const r = s * 0.22, cx = s - r - 0.5, cy = s - r - 0.5;
+    const dot = Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}"><circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}" stroke="#16181D" stroke-width="${Math.max(1, s / 16)}"/></svg>`,
+    );
+    const { data } = await sharp(base.rgba, { raw: { width: s, height: s, channels: 4 } })
+      .composite([{ input: dot }])
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const img = { rgba: data, width: s, height: s };
+    imgs.push(img);
+    if (s === 32) fs.writeFileSync(path.join(out, `tray-${state}-32.png`), await toPng(img));
+  }
+  writeIco(path.join(out, `tray-${state}.ico`), imgs);
 }
 
 // ---------- Inno Setup wizard images (100/125/150/175/200 % DPI)
-const scales = [1, 1.25, 1.5, 1.75, 2];
-const innerFull = FULL.replace(/^<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '');
-function wizardLargeSvg(w, h) {
-  // Designed on a 164x314 canvas, scaled via viewBox.
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 164 314" width="${w}" height="${h}" preserveAspectRatio="none">
+function svgRGBA(svgText, width, height) {
+  const r = new Resvg(svgText, {
+    fitTo: { mode: 'width', value: width },
+    font: { loadSystemFonts: true, defaultFontFamily: 'Segoe UI' },
+    shapeRendering: 2,
+  });
+  const img = PNG.sync.read(r.render().asPng());
+  return { rgba: img.data, width: img.width, height: img.height };
+}
+async function overlay(base, iconSize, left, top) {
+  const icon = await iconRGBA(iconSize);
+  const { data } = await sharp(base.rgba, { raw: { width: base.width, height: base.height, channels: 4 } })
+    .composite([{ input: icon.rgba, raw: { width: iconSize, height: iconSize, channels: 4 }, left, top }])
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  return { rgba: data, width: base.width, height: base.height };
+}
+const largePanel = (w, h) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 164 314" width="${w}" height="${h}" preserveAspectRatio="none">
   <rect width="164" height="314" fill="#16181D"/>
-  <svg x="42" y="92" width="80" height="80" viewBox="0 0 256 256">${innerFull.replace('fill="#16181D"', 'fill="#22252D"')}</svg>
   <text x="82" y="206" text-anchor="middle" font-family="Segoe UI" font-weight="700" font-size="26" letter-spacing="2" fill="#F5F3EF">AMPLS</text>
   <text x="82" y="226" text-anchor="middle" font-family="Segoe UI" font-size="9.5" fill="#9A9DA5">Apache · MySQL · PHP</text>
-  <rect x="58" y="282" width="12" height="4" rx="2" fill="#E8622C"/>
-  <rect x="76" y="282" width="12" height="4" rx="2" fill="#9AA3FF"/>
-  <rect x="94" y="282" width="12" height="4" rx="2" fill="#3FA9C9"/>
 </svg>`;
-}
-function wizardSmallSvg(w, h) {
-  // 55x58 canvas: the app icon, centered, on the white wizard header.
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 55 58" width="${w}" height="${h}">
-  <svg x="1.5" y="3" width="52" height="52" viewBox="0 0 256 256">${innerFull}</svg>
-</svg>`;
-}
-const largeFiles = [], smallFiles = [];
-for (const k of scales) {
+const smallPanel = (w, h) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="#ffffff"/></svg>`;
+for (const k of [1, 1.25, 1.5, 1.75, 2]) {
   const pct = Math.round(k * 100);
   const lw = Math.round(164 * k), lh = Math.round(314 * k);
-  const sw = Math.round(55 * k), sh = Math.round(58 * k);
-  const lf = `installer-wizard-large-${pct}.bmp`, sf = `installer-wizard-small-${pct}.bmp`;
-  writeBmp24(path.join(out, lf), render(wizardLargeSvg(lw, lh), lw, lh), [0x16, 0x18, 0x1d]);
-  writeBmp24(path.join(out, sf), render(wizardSmallSvg(sw, sh), sw, sh), [255, 255, 255]);
-  largeFiles.push(lf); smallFiles.push(sf);
+  const ls = Math.round(96 * k);
+  const large = await overlay(svgRGBA(largePanel(lw, lh), lw, lh), ls, Math.round((lw - ls) / 2), Math.round(76 * k));
+  writeBmp24(path.join(out, `installer-wizard-large-${pct}.bmp`), large, [0x16, 0x18, 0x1d]);
+  const sw = Math.round(55 * k), sh = Math.round(58 * k), ss = Math.round(52 * k);
+  const small = await overlay(svgRGBA(smallPanel(sw, sh), sw, sh), ss, Math.round((sw - ss) / 2), Math.round((sh - ss) / 2));
+  writeBmp24(path.join(out, `installer-wizard-small-${pct}.bmp`), small, [255, 255, 255]);
 }
 // Unsuffixed 100% copies for tools that want a single file.
 fs.copyFileSync(path.join(out, 'installer-wizard-large-100.bmp'), path.join(out, 'installer-wizard-large.bmp'));
 fs.copyFileSync(path.join(out, 'installer-wizard-small-100.bmp'), path.join(out, 'installer-wizard-small.bmp'));
 
-// ---------- Wails build inputs
+// ---------- consumers
 fs.mkdirSync(path.join(root, 'build', 'windows'), { recursive: true });
 fs.copyFileSync(path.join(out, 'app-1024.png'), path.join(root, 'build', 'appicon.png'));
 fs.copyFileSync(path.join(out, 'app.ico'), path.join(root, 'build', 'windows', 'icon.ico'));
+fs.mkdirSync(path.join(root, 'frontend', 'src', 'assets'), { recursive: true });
+fs.copyFileSync(path.join(out, 'app-64.png'), path.join(root, 'frontend', 'src', 'assets', 'logo.png'));
 
 console.log('icons written to', out);
