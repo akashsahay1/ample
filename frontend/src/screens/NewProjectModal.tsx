@@ -22,6 +22,9 @@ export default function NewProjectModal({onClose}: {onClose: () => void}) {
   const [dir, setDir] = useState('')
   const [php, setPhp] = useState('')
   const [createDb, setCreateDb] = useState(true)
+  // Database name follows the project name until the user edits it.
+  const [dbName, setDbName] = useState('')
+  const [dbEdited, setDbEdited] = useState(false)
   const [phase, setPhase] = useState<Phase>('form')
   const [progress, setProgress] = useState<Progress | null>(null)
   const [log, setLog] = useState<string[]>([])
@@ -32,6 +35,10 @@ export default function NewProjectModal({onClose}: {onClose: () => void}) {
   const tld = settings.data?.tld ?? 'test'
   const parked = settings.data?.parked ?? []
   const s = slug(name)
+  const db = dbEdited ? dbName : s.replace(/-/g, '_')
+  const dbValid = /^[A-Za-z0-9_]{1,64}$/.test(db)
+  const wantsDb = createDb && kind !== 'blank'
+  const canCreate = !!s && !!dir && (!wantsDb || dbValid)
   const phpVersions = overview?.phpVersions ?? []
 
   useEffect(() => {
@@ -51,7 +58,7 @@ export default function NewProjectModal({onClose}: {onClose: () => void}) {
       if (p.message) setLog(l => (l[l.length - 1] === p.message ? l : [...l, p.message]))
     })
     try {
-      const created = await backend.NewProject({name: s, kind, directory: dir, php, createDb})
+      const created = await backend.NewProject({name: s, kind, directory: dir, php, createDb: wantsDb, database: wantsDb ? db : ''})
       setSite(created)
       setPhase('done')
     } catch (e) {
@@ -131,7 +138,7 @@ export default function NewProjectModal({onClose}: {onClose: () => void}) {
       footer={
         <>
           <Button onClick={onClose}>Cancel</Button>
-          <Button variant="primary" disabled={!s || !dir} onClick={create}>
+          <Button variant="primary" disabled={!canCreate} onClick={create}>
             Create project
           </Button>
         </>
@@ -141,7 +148,7 @@ export default function NewProjectModal({onClose}: {onClose: () => void}) {
         className="flex flex-col gap-4"
         onSubmit={e => {
           e.preventDefault()
-          if (s && dir) create()
+          if (canCreate) create()
         }}
       >
         <div role="radiogroup" aria-label="Project type" className="grid grid-cols-3 gap-2.5">
@@ -222,11 +229,40 @@ export default function NewProjectModal({onClose}: {onClose: () => void}) {
           </Field>
         </div>
 
-        <label className="flex items-center gap-2.5 text-[13px]">
-          <input type="checkbox" className="h-4 w-4 accent-[#C2461A]" checked={createDb} onChange={e => setCreateDb(e.target.checked)} />
-          Create a MySQL database
-          {s && <span className="font-mono text-xs text-muted">{s.replace(/-/g, '_')}</span>}
-        </label>
+        {kind !== 'blank' && (
+          <div className="grid grid-cols-2 items-end gap-3">
+            <label className="flex h-[38px] items-center gap-2.5 text-[13px]">
+              <input type="checkbox" className="h-4 w-4 accent-[#C2461A]" checked={createDb} onChange={e => setCreateDb(e.target.checked)} />
+              Create a MySQL database
+            </label>
+            {createDb && (
+              <Field
+                label="Database name"
+                hint={
+                  !dbValid && db !== '' ? (
+                    <span className="text-[#8F3212]">Letters, digits and underscores only (max 64).</span>
+                  ) : kind === 'laravel' ? (
+                    'Written to .env as DB_DATABASE.'
+                  ) : (
+                    'Written to wp-config.php as DB_NAME.'
+                  )
+                }
+              >
+                <input
+                  className="input mono text-sm"
+                  value={db}
+                  placeholder={s ? s.replace(/-/g, '_') : 'my_app'}
+                  spellCheck={false}
+                  aria-invalid={!dbValid && db !== ''}
+                  onChange={e => {
+                    setDbEdited(true)
+                    setDbName(e.target.value)
+                  }}
+                />
+              </Field>
+            )}
+          </div>
+        )}
         <button type="submit" hidden />
       </form>
     </Modal>

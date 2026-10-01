@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -51,7 +52,10 @@ Examples:
 	}
 	logs.Flags().IntVarP(&lines, "lines", "n", 100, "number of lines to show")
 
-	var setupOpts core.SetupOptions
+	var (
+		setupOpts   core.SetupOptions
+		mysqlPwFile string
+	)
 	setup := &cobra.Command{
 		Use:   "setup",
 		Short: "Prepare the data directory (run by the installer)",
@@ -78,6 +82,18 @@ Examples:
 				}
 			}
 			log(fmt.Sprintf("ampls %s setup (home %s)", version, paths.Home()))
+			if mysqlPwFile != "" {
+				// One-time file written by the installer; read and delete it so the
+				// password never sits on a command line or stays on disk.
+				b, err := os.ReadFile(mysqlPwFile)
+				_ = os.Remove(mysqlPwFile)
+				if err != nil {
+					log("error: read MySQL password file: " + err.Error())
+					return err
+				}
+				// Inno Setup writes UTF-8 with a BOM.
+				setupOpts.MySQLPassword = strings.TrimRight(strings.TrimPrefix(string(b), string(rune(0xFEFF))), "\r\n")
+			}
 			err := backend().Setup(setupOpts, log)
 			if err != nil {
 				log("error: " + err.Error())
@@ -90,6 +106,7 @@ Examples:
 	}
 	setup.Flags().BoolVar(&setupOpts.ParkDefault, "park-default", false, "create and park ~/AMPLS/Sites")
 	setup.Flags().BoolVar(&setupOpts.TrustCAMachine, "trust-ca-machine", false, "trust the AMPLS CA machine-wide (requires admin)")
+	setup.Flags().StringVar(&mysqlPwFile, "mysql-password-file", "", "file holding the root password for a fresh MySQL install (deleted after reading)")
 
 	var trustMachine bool
 	trust := &cobra.Command{

@@ -129,6 +129,7 @@ const
 
 var
   DataDirPage: TInputDirWizardPage;
+  MySQLPage: TInputQueryWizardPage;
   UninstallDataDir: string;
 
 { ---------- data dir ---------- }
@@ -155,6 +156,14 @@ begin
   { upgrade: default to the previous data dir; silent installs can pass /DATADIR=D:\AMPLS }
   Def := GetPreviousData('DataDir', DefaultDataDir);
   DataDirPage.Values[0] := ExpandConstant('{param:DATADIR|' + Def + '}');
+
+  MySQLPage := CreateInputQueryPage(DataDirPage.ID,
+    'MySQL Root Password',
+    'Choose the password for the MySQL root user.',
+    'MySQL only listens on this computer (127.0.0.1). Leave both fields empty for no password, like XAMPP. ' +
+    'You can change it later in AMPLS under MySQL > Change password.');
+  MySQLPage.Add('&Password:', True);
+  MySQLPage.Add('&Confirm password:', True);
 end;
 
 procedure RegisterPreviousData(PreviousDataKey: Integer);
@@ -169,11 +178,28 @@ begin
   Result := Copy(Child, 1, Length(Parent)) = Parent;
 end;
 
+{ The password only applies to a fresh MySQL datadir; upgrades keep the existing one. }
+function MySQLAlreadyInitialized: Boolean;
+begin
+  Result := DirExists(GetDataDir('') + '\data\mysql');
+end;
+
+function ShouldSkipPage(PageID: Integer): Boolean;
+begin
+  Result := (MySQLPage <> nil) and (PageID = MySQLPage.ID) and MySQLAlreadyInitialized;
+end;
+
 function NextButtonClick(CurPageID: Integer): Boolean;
 var
   D, App: string;
 begin
   Result := True;
+  if (MySQLPage <> nil) and (CurPageID = MySQLPage.ID) and (MySQLPage.Values[0] <> MySQLPage.Values[1]) then
+  begin
+    SuppressibleMsgBox('The two MySQL passwords do not match.', mbError, MB_OK, IDOK);
+    Result := False;
+    exit;
+  end;
   if CurPageID = DataDirPage.ID then
   begin
     D := GetDataDir('');
@@ -416,7 +442,8 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   Code: Integer;
-  Home, Bin, Shims: string;
+  Home, Bin, Shims, PwFile, Params: string;
+  PwLines: TArrayOfString;
 begin
   if CurStep <> ssPostInstall then exit;
   Home := GetDataDir('');
@@ -459,8 +486,26 @@ begin
     Log('ampls-helper install failed; hosts edits will fall back to UAC prompts');
 
   { unelevated: never write as admin into a user-writable tree }
-  Code := RunAsUser(Bin + '\ampls.exe', 'setup --home "' + Home + '"' + SetupFlags,
+  { MySQL root password: handed over in a one-time file inside the (now owner-only)
+    data dir, never on a command line; setup deletes it after reading. }
+  PwFile := '';
+  if (not MySQLAlreadyInitialized) and (MySQLPage.Values[0] <> '') then
+  begin
+    PwFile := Home + '\setup-mysql-password.txt';
+    SetArrayLength(PwLines, 1);
+    PwLines[0] := MySQLPage.Values[0];
+    { UTF-8 (with BOM, CRLF); ampls setup strips both }
+    if not SaveStringsToUTF8File(PwFile, PwLines, False) then
+    begin
+      Log('Could not write the MySQL password file; MySQL will start without a password');
+      PwFile := '';
+    end;
+  end;
+  Params := 'setup --home "' + Home + '"' + SetupFlags;
+  if PwFile <> '' then Params := Params + ' --mysql-password-file "' + PwFile + '"';
+  Code := RunAsUser(Bin + '\ampls.exe', Params,
     'Configuring Apache, PHP and MySQL (this can take a minute)...');
+  if PwFile <> '' then DeleteFile(PwFile);
   if Code <> 0 then
     SuppressibleMsgBox(Format('AMPLS setup did not finish (code %d).' + #13#10#13#10 +
       'Details: %s\logs\setup.log' + #13#10#13#10 +

@@ -1,4 +1,5 @@
-import {useEffect, useMemo, useRef, useState} from 'react'
+import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react'
+import {createPortal} from 'react-dom'
 import {ExternalLink, Folder, FolderPlus, Globe, MoreHorizontal, SquareTerminal, X} from 'lucide-react'
 import {backend, PHPVersion, Site} from '../lib/api'
 import {basename, copyText, frameworkLabel, shortPath, slug} from '../lib/format'
@@ -9,31 +10,57 @@ import ConflictBanner from '../components/ConflictBanner'
 
 const ROW = 'grid grid-cols-[minmax(0,1.3fr)_minmax(0,1.6fr)_130px_110px_150px] items-center gap-4 px-5'
 
+const MENU_W = 192
+
 function MoreMenu({site, onUnlink}: {site: Site; onUnlink: () => void}) {
   const {toast} = useApp()
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  // Fixed-position coordinates: the menu is portalled to <body> so the table
+  // card's overflow-hidden can never clip it (the last rows used to be cut off).
+  const [pos, setPos] = useState<{left: number; top?: number; bottom?: number}>({left: 0})
+  const anchor = useRef<HTMLDivElement>(null)
+  const menu = useRef<HTMLDivElement>(null)
+
+  const place = () => {
+    const r = anchor.current?.getBoundingClientRect()
+    if (!r) return
+    const left = Math.max(8, Math.min(r.right - MENU_W, window.innerWidth - MENU_W - 8))
+    const below = window.innerHeight - r.bottom
+    // open upwards when the menu (~4 items) would not fit below the button
+    setPos(below < 190 && r.top > below ? {left, bottom: window.innerHeight - r.top + 4} : {left, top: r.bottom + 4})
+  }
+
+  useLayoutEffect(() => {
+    if (open) place()
+  }, [open])
+
   useEffect(() => {
     if (!open) return
     const close = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false)
+      const t = e.target as Node
+      if (!anchor.current?.contains(t) && !menu.current?.contains(t)) setOpen(false)
     }
     const key = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    const dismiss = () => setOpen(false)
     window.addEventListener('mousedown', close)
     window.addEventListener('keydown', key)
+    window.addEventListener('resize', dismiss)
+    window.addEventListener('scroll', dismiss, true) // any scrolling ancestor
     return () => {
       window.removeEventListener('mousedown', close)
       window.removeEventListener('keydown', key)
+      window.removeEventListener('resize', dismiss)
+      window.removeEventListener('scroll', dismiss, true)
     }
   }, [open])
   const item = 'block w-full border-0 bg-transparent px-3 py-2 text-left text-[13px] hover:bg-subtle focus:bg-subtle'
   return (
-    <div className="relative" ref={ref}>
+    <div ref={anchor}>
       <IconButton label="More actions" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(o => !o)}>
         <MoreHorizontal size={16} />
       </IconButton>
-      {open && (
-        <div role="menu" className="card absolute top-9 right-0 z-20 w-48 overflow-hidden py-1 shadow-lg">
+      {open && createPortal(
+        <div ref={menu} role="menu" className="card fixed z-50 overflow-hidden py-1 shadow-lg" style={{width: MENU_W, ...pos}}>
           <button role="menuitem" type="button" className={item} onClick={() => (copyText(site.path), toast('success', 'Path copied'), setOpen(false))}>
             Copy path
           </button>
@@ -50,7 +77,8 @@ function MoreMenu({site, onUnlink}: {site: Site; onUnlink: () => void}) {
               Unlink site…
             </button>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

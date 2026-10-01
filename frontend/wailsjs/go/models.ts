@@ -242,6 +242,7 @@ export namespace api {
 	    directory: string;
 	    php: string;
 	    createDb: boolean;
+	    database: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new NewProjectRequest(source);
@@ -254,6 +255,7 @@ export namespace api {
 	        this.directory = source["directory"];
 	        this.php = source["php"];
 	        this.createDb = source["createDb"];
+	        this.database = source["database"];
 	    }
 	}
 	export class ServiceStatus {

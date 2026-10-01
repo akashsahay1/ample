@@ -280,7 +280,10 @@ func secureCmd(secure bool) *cobra.Command {
 
 func newCmd() *cobra.Command {
 	var dir, phpVer string
-	var db bool
+	var (
+		db     bool
+		dbName string
+	)
 	c := &cobra.Command{
 		Use:   "new <laravel|wordpress|blank> <name>",
 		Short: "Create a new Laravel, WordPress or blank PHP project",
@@ -304,7 +307,7 @@ Examples:
 			default:
 				return fmt.Errorf("unknown project kind %q (expected laravel, wordpress or blank)", args[0])
 			}
-			req := api.NewProjectRequest{Name: strings.ToLower(args[1]), Kind: kind, PHP: normMinor(phpVer), CreateDB: db}
+			req := api.NewProjectRequest{Name: strings.ToLower(args[1]), Kind: kind, PHP: normMinor(phpVer), CreateDB: db || dbName != "", Database: dbName}
 			if dir != "" {
 				d, err := filepath.Abs(dir)
 				if err != nil {
@@ -335,6 +338,7 @@ Examples:
 	c.Flags().StringVar(&dir, "dir", "", "parent directory (default: first parked directory)")
 	c.Flags().StringVar(&phpVer, "php", "", "PHP version for the site (default: the default version)")
 	c.Flags().BoolVar(&db, "db", false, "create a MySQL database for the project")
+	c.Flags().StringVar(&dbName, "db-name", "", "database name (implies --db; default: project name with - replaced by _)")
 	return c
 }
 

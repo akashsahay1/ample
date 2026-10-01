@@ -148,19 +148,33 @@ export function Modal({
   dismissable?: boolean
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  // Callers pass inline onClose functions; keep them in refs so re-renders (every
+  // keystroke in a form) never re-run the focus effect and steal focus.
+  const onCloseRef = useRef(onClose)
+  const dismissableRef = useRef(dismissable)
+  onCloseRef.current = onClose
+  dismissableRef.current = dismissable
+
+  // Initial focus, once per open: an [autofocus] field, else the first text field,
+  // else the primary button. Never the header's close button.
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null
-    const el = ref.current?.querySelector<HTMLElement>('input:not([type=checkbox]):not([readonly]), select, textarea, button.btn-pri, button')
-    el?.focus()
+    const root = ref.current
+    const pick = (sel: string) => root?.querySelector<HTMLElement>(sel)
+    const el =
+      pick('[autofocus], [data-autofocus]') ??
+      pick('input:not([type=checkbox]):not([type=radio]):not([readonly]):not([disabled]), select, textarea') ??
+      pick('button.btn-pri')
+    if (el && !root?.contains(document.activeElement)) el.focus()
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && dismissable) onClose()
+      if (e.key === 'Escape' && dismissableRef.current) onCloseRef.current()
     }
     window.addEventListener('keydown', onKey)
     return () => {
       window.removeEventListener('keydown', onKey)
       prev?.focus?.()
     }
-  }, [dismissable, onClose])
+  }, [])
   return (
     <div
       className="fade-in fixed inset-0 z-40 flex items-center justify-center bg-[rgba(22,24,29,0.45)] p-6"

@@ -71,7 +71,7 @@ export const hasBackend = (): boolean => typeof (window as any).go !== 'undefine
 
 export const backend = {
   ...App,
-  NewProject: (r: {name: string; kind: string; directory: string; php: string; createDb: boolean}) =>
+  NewProject: (r: {name: string; kind: string; directory: string; php: string; createDb: boolean; database: string}) =>
     App.NewProject(api.NewProjectRequest.createFrom(r)),
   SavePHPSettings: (s: {version: string; ini: Record<string, string>; extensions: Extension[]}) =>
     App.SavePHPSettings(api.PHPSettings.createFrom(s)),

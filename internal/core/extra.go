@@ -170,14 +170,32 @@ func (c *Core) newProject(req api.NewProjectRequest, report func(api.Progress)) 
 		DBPort: cfg.Ports.MySQL, DBPassword: cfg.MySQL.RootPassword,
 	}
 	if req.CreateDB && req.Kind != api.KindBlank {
+		pr.DB = strings.TrimSpace(req.Database)
+		if pr.DB == "" {
+			pr.DB = dbName(req.Name)
+		}
+		if !mysql.ValidName(pr.DB) {
+			return api.Site{}, fmt.Errorf("invalid database name %q: use letters, digits and underscores (max 64)", pr.DB)
+		}
 		report(api.Progress{Message: "Starting MySQL", Percent: -1})
 		if err := c.StartService(api.ServiceMySQL); err != nil {
 			return api.Site{}, err
 		}
-		pr.DB = dbName(req.Name)
-		report(api.Progress{Message: "Creating database " + pr.DB, Percent: -1})
-		if err := mysql.CreateDatabase(cfg.Ports.MySQL, cfg.MySQL.RootPassword, pr.DB); err != nil {
-			return api.Site{}, err
+		exists := false
+		if dbs, err := mysql.ListDatabases(cfg.Ports.MySQL, cfg.MySQL.RootPassword); err == nil {
+			for _, d := range dbs {
+				if strings.EqualFold(d.Name, pr.DB) {
+					exists = true
+				}
+			}
+		}
+		if exists {
+			report(api.Progress{Message: "Using existing database " + pr.DB, Percent: -1})
+		} else {
+			report(api.Progress{Message: "Creating database " + pr.DB, Percent: -1})
+			if err := mysql.CreateDatabase(cfg.Ports.MySQL, cfg.MySQL.RootPassword, pr.DB); err != nil {
+				return api.Site{}, err
+			}
 		}
 	}
 	path, err := projects.Create(context.Background(), pr, func(msg string, pct float64) {
@@ -312,8 +330,9 @@ func tail(path string, n int) (string, error) {
 // ---------- setup (installer) ----------
 
 type SetupOptions struct {
-	ParkDefault    bool // create and park %USERPROFILE%\AMPLS\Sites
-	TrustCAMachine bool // add the CA to the machine Root store (needs admin; the installer uses `ampls trust --machine` instead)
+	ParkDefault    bool   // create and park %USERPROFILE%\AMPLS\Sites
+	TrustCAMachine bool   // add the CA to the machine Root store (needs admin; the installer uses `ampls trust --machine` instead)
+	MySQLPassword  string // root password for a fresh MySQL datadir ("" = none); ignored when already initialized
 }
 
 // Setup prepares a freshly installed (or upgraded) data directory. Idempotent.
@@ -378,9 +397,20 @@ func (c *Core) Setup(opts SetupOptions, log func(string)) error {
 		}
 		if !mysql.Initialized() {
 			log("Initializing MySQL data directory")
-			if err := mysql.Initialize(); err != nil {
+			if err := mysql.InitializeWithPassword(opts.MySQLPassword); err != nil {
 				return fmt.Errorf("initialize MySQL: %w", err)
 			}
+			if _, err := config.Update(func(c *config.Config) error {
+				c.MySQL.RootPassword = opts.MySQLPassword
+				return nil
+			}); err != nil {
+				return err
+			}
+			if opts.MySQLPassword != "" {
+				log("MySQL root password set")
+			}
+		} else if opts.MySQLPassword != "" {
+			log("MySQL already initialized: kept the existing root password")
 		}
 	}
 	log("Creating local certificate authority")

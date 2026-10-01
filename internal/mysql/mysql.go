@@ -5,6 +5,7 @@ package mysql
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -98,7 +99,11 @@ func Initialized() bool {
 }
 
 // Initialize runs mysqld --initialize-insecure (root@localhost, empty password).
-func Initialize() error {
+func Initialize() error { return InitializeWithPassword("") }
+
+// InitializeWithPassword initializes the datadir and, when rootPassword is not
+// empty, sets it for root@localhost via --init-file during initialization.
+func InitializeWithPassword(rootPassword string) error {
 	if Initialized() {
 		return nil
 	}
@@ -121,7 +126,22 @@ func Initialize() error {
 	os.RemoveAll(stage)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, MysqldPath(), "--defaults-file="+slash(IniPath()), "--datadir="+slash(stage), "--initialize-insecure", "--console")
+	args := []string{"--defaults-file=" + slash(IniPath()), "--datadir=" + slash(stage), "--initialize-insecure", "--console"}
+	if rootPassword != "" {
+		// Private per-user temp file (not the shared data dir), removed right after.
+		f, err := os.CreateTemp("", "ampls-init-*.sql")
+		if err != nil {
+			return fmt.Errorf("mysql: initialize: %w", err)
+		}
+		defer os.Remove(f.Name())
+		_, werr := f.WriteString("ALTER USER 'root'@'localhost' IDENTIFIED BY " + sqlString(rootPassword) + ";\n")
+		cerr := f.Close()
+		if werr != nil || cerr != nil {
+			return fmt.Errorf("mysql: initialize: write init file: %v", errors.Join(werr, cerr))
+		}
+		args = append(args, "--init-file="+slash(f.Name()))
+	}
+	cmd := exec.CommandContext(ctx, MysqldPath(), args...)
 	cmd.Dir = filepath.Dir(MysqldPath())
 	services.Hide(cmd)
 	out, err := cmd.CombinedOutput()

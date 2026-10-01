@@ -97,6 +97,7 @@ type NewProjectRequest struct {
 	Directory string `json:"directory"` // parent dir, normally a parked dir
 	PHP       string `json:"php"`       // "" = default
 	CreateDB  bool   `json:"createDb"`  // create a MySQL database named after the project
+	Database  string `json:"database"`  // database name ("" = project name with - replaced by _)
 }
 
 type Progress struct {
