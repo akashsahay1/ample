@@ -115,6 +115,10 @@ Type: files; Name: "{app}\bin\composer.bat"
 
 [UninstallDelete]
 Type: files; Name: "{app}\data-dir.txt"
+; written by the helper service while it is being stopped/removed
+Type: files; Name: "{app}\bin\ampls-helper.log*"
+Type: dirifempty; Name: "{app}\bin"
+Type: dirifempty; Name: "{app}"
 
 [Code]
 const
@@ -400,9 +404,13 @@ end;
 
 procedure SecureDataDir(Home: string);
 begin
+  { Set the ACL on the root only, then make every child inherit it. Applying the
+    (OI)(CI) grants with /T stamps them onto each file, where they do not grant
+    execute: mysqld.exe / php.exe then fail with "Access is denied". }
   RunHidden(ExpandConstant('{sys}\icacls.exe'),
     '"' + Home + '" /inheritance:r /grant:r *S-1-5-18:(OI)(CI)F *S-1-5-32-544:(OI)(CI)F "' +
-    OriginalUserName(Home) + '":(OI)(CI)M /T /C /Q', 'Securing the data folder...');
+    OriginalUserName(Home) + '":(OI)(CI)M /C /Q', 'Securing the data folder...');
+  RunHidden(ExpandConstant('{sys}\icacls.exe'), '"' + Home + '\*" /reset /T /C /Q', '');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
@@ -454,8 +462,9 @@ begin
   Code := RunAsUser(Bin + '\ampls.exe', 'setup --home "' + Home + '"' + SetupFlags,
     'Configuring Apache, PHP and MySQL (this can take a minute)...');
   if Code <> 0 then
-    SuppressibleMsgBox(Format('AMPLS setup did not finish (code %d).' + #13#10 +
-      'You can re-run it later from a terminal:  ampls setup --home "%s"', [Code, Home]), mbError, MB_OK, IDOK);
+    SuppressibleMsgBox(Format('AMPLS setup did not finish (code %d).' + #13#10#13#10 +
+      'Details: %s\logs\setup.log' + #13#10#13#10 +
+      'You can re-run it later from a terminal:  ampls setup --home "%s"', [Code, Home, Home]), mbError, MB_OK, IDOK);
 
   { elevated: trust the CA the user just created (verified against its key, never created here) }
   if WizardIsTaskSelected('trustca') then

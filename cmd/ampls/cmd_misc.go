@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -62,7 +65,27 @@ Examples:
 		GroupID: "misc",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return backend().Setup(setupOpts, func(s string) { fmt.Println(s) })
+			// Also log to <Home>\logs\setup.log: the installer runs this hidden, so
+			// the file is the only place a failure can be read afterwards.
+			var logf *os.File
+			if err := os.MkdirAll(paths.LogsDir(), 0o755); err == nil {
+				logf, _ = os.OpenFile(filepath.Join(paths.LogsDir(), "setup.log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+			}
+			log := func(s string) {
+				fmt.Println(s)
+				if logf != nil {
+					fmt.Fprintf(logf, "%s %s\n", time.Now().Format("2006-01-02 15:04:05"), s)
+				}
+			}
+			log(fmt.Sprintf("ampls %s setup (home %s)", version, paths.Home()))
+			err := backend().Setup(setupOpts, log)
+			if err != nil {
+				log("error: " + err.Error())
+			}
+			if logf != nil {
+				logf.Close()
+			}
+			return err
 		},
 	}
 	setup.Flags().BoolVar(&setupOpts.ParkDefault, "park-default", false, "create and park ~/AMPLS/Sites")
