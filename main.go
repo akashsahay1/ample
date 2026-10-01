@@ -17,6 +17,9 @@ var assets embed.FS
 // version is the desktop app version shown in the UI (the lead wires it to core.Version).
 var version = "1.0.0"
 
+// build is the build number (git commit count), set via -ldflags "-X main.build=N".
+var build = ""
+
 // startHidden reports whether --hidden was passed (used by launch-at-login).
 func startHidden() bool {
 	for _, a := range os.Args[1:] {

@@ -14,6 +14,9 @@ import (
 // version is set at build time: -ldflags "-X main.version=1.2.3".
 var version = "dev"
 
+// build is the build number (git commit count): -ldflags "-X main.build=42".
+var build = ""
+
 var homeFlag string
 
 func newRootCmd() *cobra.Command {
@@ -54,6 +57,7 @@ individual folders can be linked, pinned to a PHP version and served over HTTPS.
 
 func main() {
 	core.Version = version
+	core.Build = build
 	initConsole()
 	if err := newRootCmd().Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, red("error: ")+err.Error())

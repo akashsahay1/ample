@@ -9,6 +9,10 @@
 [CmdletBinding()]
 param(
     [string]$Version = '',
+    # build number; defaults to the git commit count (monotonic, reproducible)
+    [string]$Build = '',
+    # do not copy the installer into website/uploads or update the site data
+    [switch]$SkipSite,
     [switch]$SkipGui,
     [switch]$SkipInstaller,
     # passed to ISCC as /DCompression=... (e.g. 'none' or 'lzma2/fast' for quick test builds)
@@ -42,7 +46,13 @@ if (-not $Version) {
     $Version = $wails.info.productVersion
 }
 if (-not $Version) { $Version = '0.0.0-dev' }
-Write-Host "AMPLS build $Version" -ForegroundColor Green
+if (-not $Build) {
+    $Build = (& git -C $Root rev-list --count HEAD 2>$null)
+    if (-not $Build) { $Build = '0' }
+}
+$Build = "$Build".Trim()
+Write-Host "AMPLS $Version build $Build" -ForegroundColor Green
+$LdVars = "-X main.version=$Version -X main.build=$Build"
 
 $Go = Find-Tool 'go' @('C:\Program Files\Go\bin\go.exe')
 $env:GOOS = 'windows'; $env:GOARCH = 'amd64'; $env:CGO_ENABLED = '0'
@@ -63,7 +73,7 @@ try {
         if (-not (Test-Path (Join-Path $dir '*.go'))) { throw "missing Go package ./$($t.Pkg) (no .go files in $dir)" }
         $outDir = if ($t.ContainsKey('Dir')) { Join-Path $App $t.Dir } else { $Bin }
         New-Item -ItemType Directory -Force $outDir | Out-Null
-        Invoke-Checked $Go @('build', '-trimpath', '-ldflags', "-s -w -X main.version=$Version", '-o', (Join-Path $outDir $t.Out), "./$($t.Pkg)")
+        Invoke-Checked $Go @('build', '-trimpath', '-ldflags', "-s -w $LdVars", '-o', (Join-Path $outDir $t.Out), "./$($t.Pkg)")
     }
 } finally { Pop-Location }
 
@@ -73,7 +83,7 @@ if (-not $SkipGui) {
     $WailsExe = Find-Tool 'wails' @((Join-Path $env:USERPROFILE 'go\bin\wails.exe'))
     Push-Location $Root
     try {
-        Invoke-Checked $WailsExe @('build', '-clean', '-platform', 'windows/amd64', '-ldflags', "-X main.version=$Version")
+        Invoke-Checked $WailsExe @('build', '-clean', '-platform', 'windows/amd64', '-ldflags', $LdVars)
     } finally { Pop-Location }
     Copy-Item -Force (Join-Path $Root 'build\bin\AMPLS.exe') (Join-Path $App 'AMPLS.exe')
 } elseif (-not (Test-Path (Join-Path $App 'AMPLS.exe'))) {
@@ -102,12 +112,18 @@ if (-not $SkipInstaller) {
         (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'),
         (Join-Path $env:ProgramFiles 'Inno Setup 6\ISCC.exe'),
         (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe'))
-    $isccArgs = @("/DAppVersion=$Version")
+    $isccArgs = @("/DAppVersion=$Version", "/DAppBuild=$Build")
     if ($Compression) { $isccArgs += "/DCompression=$Compression" }
     $isccArgs += (Join-Path $Root 'installer\ampls.iss')
     Invoke-Checked $Iscc $isccArgs
     $out = Join-Path $Dist "AMPLS-Setup-$Version.exe"
     Write-Host ("    {0} ({1:N0} MB)" -f $out, ((Get-Item $out).Length / 1MB)) -ForegroundColor Green
+
+    # ------------------------------------------------------------ (f) website
+    if (-not $SkipSite) {
+        Write-Step 'Website (website/uploads + release data)'
+        & (Join-Path $PSScriptRoot 'publish-site.ps1') -Version $Version -Build $Build -Installer $out
+    }
 }
 
 Write-Step 'Done'

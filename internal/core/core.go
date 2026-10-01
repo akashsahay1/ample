@@ -27,8 +27,12 @@ import (
 	"ampls/internal/sites"
 )
 
-// Version is the AMPLS version, overridden via -ldflags by the binaries.
-var Version = "1.0.0"
+// Version is the AMPLS version and Build the build number (git commit count),
+// both set via -ldflags by the binaries (scripts/build.ps1).
+var (
+	Version = "1.0.0"
+	Build   = ""
+)
 
 var _ api.Backend = (*Core)(nil)
 

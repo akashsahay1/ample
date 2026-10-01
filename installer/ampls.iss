@@ -9,6 +9,9 @@
 #ifndef AppVersion
   #define AppVersion "0.0.0-dev"
 #endif
+#ifndef AppBuild
+  #define AppBuild "0"
+#endif
 #ifndef Compression
   ; override for quick validation builds: /DCompression=none
   #define Compression "lzma2/ultra64"
@@ -29,7 +32,11 @@ AppPublisher=Akash Sahay
 AppComments=Apache, MySQL, PHP - Latest Software
 AppCopyright=Copyright (c) 2026 Akash Sahay
 VersionInfoProductName={#AppName}
-VersionInfoProductTextVersion={#AppVersion}
+VersionInfoProductTextVersion={#AppVersion} (build {#AppBuild})
+; numeric file version a.b.c.build (skipped for pre-release versions like 1.1.0-beta)
+#if Pos("-", AppVersion) == 0
+VersionInfoVersion={#AppVersion}.{#AppBuild}
+#endif
 VersionInfoDescription={#AppName} Setup
 DefaultDirName={autopf}\AMPLS
 DefaultGroupName=AMPLS

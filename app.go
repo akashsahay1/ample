@@ -220,7 +220,13 @@ func (a *App) RunImport(req api.ImportRequest) error {
 // ---- UI helpers ----
 
 // AppVersion returns the desktop app version.
-func (a *App) AppVersion() string { return version }
+// AppVersion is shown in Settings › About, e.g. "1.0.0 (build 42)".
+func (a *App) AppVersion() string {
+	if build != "" {
+		return version + " (build " + build + ")"
+	}
+	return version
+}
 
 // OpenURL opens a URL in the default browser.
 func (a *App) OpenURL(url string) { runtime.BrowserOpenURL(a.ctx, url) }

@@ -221,5 +221,10 @@ fs.copyFileSync(path.join(out, 'app-1024.png'), path.join(root, 'build', 'appico
 fs.copyFileSync(path.join(out, 'app.ico'), path.join(root, 'build', 'windows', 'icon.ico'));
 fs.mkdirSync(path.join(root, 'frontend', 'src', 'assets'), { recursive: true });
 fs.copyFileSync(path.join(out, 'app-64.png'), path.join(root, 'frontend', 'src', 'assets', 'logo.png'));
+const site = path.join(root, 'website');
+fs.mkdirSync(path.join(site, 'assets'), { recursive: true });
+fs.copyFileSync(path.join(out, 'app-256.png'), path.join(site, 'assets', 'logo-256.png'));
+fs.copyFileSync(path.join(out, 'app-64.png'), path.join(site, 'assets', 'logo-64.png'));
+fs.copyFileSync(path.join(out, 'app.ico'), path.join(site, 'favicon.ico'));
 
 console.log('icons written to', out);

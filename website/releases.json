@@ -1,0 +1,23 @@
+{
+    "product":  "AMPLS",
+    "latest":  "1.0.0",
+    "updated":  "2026-10-01T09:59:07Z",
+    "releases":  [
+                     {
+                         "version":  "1.0.0",
+                         "build":  19,
+                         "date":  "2026-10-01",
+                         "file":  "uploads/1.0.0/AMPLS-Setup-1.0.0.exe",
+                         "size":  82934865,
+                         "sha256":  "237b9b386f17a4320696a68b2138baa81c572fa42cae08a0a62d7c3b501abab3",
+                         "components":  {
+                                            "apache":  "2.4.68",
+                                            "mod_fcgid":  "2.3.10",
+                                            "php":  "8.5.11",
+                                            "mysql":  "8.4.11",
+                                            "phpmyadmin":  "5.2.3",
+                                            "composer":  "2.10.3"
+                                        }
+                     }
+                 ]
+}

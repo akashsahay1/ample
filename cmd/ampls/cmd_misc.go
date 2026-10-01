@@ -197,7 +197,11 @@ Examples:
 			GroupID: "misc",
 			Args:    cobra.NoArgs,
 			Run: func(cmd *cobra.Command, args []string) {
-				fmt.Printf("ampls %s (%s/%s)\n", version, runtime.GOOS, runtime.GOARCH)
+				if build != "" {
+					fmt.Printf("ampls %s build %s (%s/%s)\n", version, build, runtime.GOOS, runtime.GOARCH)
+				} else {
+					fmt.Printf("ampls %s (%s/%s)\n", version, runtime.GOOS, runtime.GOARCH)
+				}
 				fmt.Println("home: " + paths.Home())
 			},
 		},

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AMPLS: Apache, MySQL, PHP for Windows</title>
+<meta name="description" content="AMPLS is a free local PHP development environment for Windows: Apache, MySQL and every PHP version, with per-project PHP, .test domains and one-click HTTPS.">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="assets/logo-64.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
+</head>
+<body>
+<a class="skip" href="#download">Skip to download</a>
+
+<header class="nav">
+  <div class="wrap nav-row">
+    <a class="brand" href="#top" aria-label="AMPLS home">
+      <img src="assets/logo-64.png" width="32" height="32" alt="">
+      <span>AMPLS</span>
+    </a>
+    <nav aria-label="Main">
+      <a href="#features">Features</a>
+      <a href="#download">Download</a>
+      <a href="#releases">Releases</a>
+      <a href="https://github.com/akashsahay1/ample">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <p class="chip"><span class="dot" aria-hidden="true"></span>Version <b data-r="version">1.0.0</b> · Build <b data-r="build">19</b></p>
+        <h1>Apache, MySQL and every PHP version. One install.</h1>
+        <p class="lede">A local PHP environment for Windows. Drop a folder in, open <code>folder.test</code>. Pin each project to its own PHP version, turn on HTTPS with a click, and keep working next to XAMPP or Laravel Herd.</p>
+        <div class="cta">
+          <a class="btn btn-primary" data-r-href="file" href="uploads/1.0.0/AMPLS-Setup-1.0.0.exe" download>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+            Download for Windows
+          </a>
+          <a class="btn btn-ghost" href="https://github.com/akashsahay1/ample">View on GitHub</a>
+        </div>
+        <p class="meta"><span data-r="sizeText">79 MB</span> · Windows 10 / 11, 64-bit · Free and open source (MIT)</p>
+      </div>
+      <div class="hero-art">
+        <img src="assets/logo-256.png" width="256" height="256" alt="AMPLS icon">
+      </div>
+    </div>
+  </section>
+
+  <section id="download" class="release-wrap" aria-labelledby="release-title">
+    <div class="wrap">
+      <article class="release">
+        <div class="release-head">
+          <div>
+            <h2 id="release-title">AMPLS <span data-r="version">1.0.0</span></h2>
+            <p class="muted">Latest release · <span data-r="dateText">1 October 2026</span></p>
+          </div>
+          <a class="btn btn-primary btn-sm" data-r-href="file" href="uploads/1.0.0/AMPLS-Setup-1.0.0.exe" download>Download <span data-r="sizeText">79 MB</span></a>
+        </div>
+        <dl class="facts">
+          <div><dt>Version</dt><dd data-r="version">1.0.0</dd></div>
+          <div><dt>Build</dt><dd data-r="build">19</dd></div>
+          <div><dt>Released</dt><dd data-r="dateText">1 October 2026</dd></div>
+          <div><dt>File</dt><dd class="mono" data-r="fileName">AMPLS-Setup-1.0.0.exe</dd></div>
+        </dl>
+        <div class="sha">
+          <span class="sha-label">SHA-256</span>
+          <code class="mono" data-r="sha256">237b9b386f17a4320696a68b2138baa81c572fa42cae08a0a62d7c3b501abab3</code>
+          <button class="copy" type="button" data-copy="sha256" aria-label="Copy SHA-256 checksum">Copy</button>
+        </div>
+        <div class="bundled">
+          <h3>Bundled in this installer</h3>
+          <ul class="components" data-r-list="components">
+            <li><span>Apache</span><b>2.4.68</b></li>
+            <li><span>PHP</span><b>8.5.11</b></li>
+            <li><span>MySQL</span><b>8.4.11</b></li>
+            <li><span>phpMyAdmin</span><b>5.2.3</b></li>
+            <li><span>Composer</span><b>2.10.3</b></li>
+          </ul>
+        </div>
+        <p class="note">The installer is not code-signed yet. If Windows SmartScreen shows “Windows protected your PC”, choose <b>More info</b> → <b>Run anyway</b>.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="features" class="features" aria-labelledby="features-title">
+    <div class="wrap">
+      <h2 id="features-title" class="section-title">Everything a PHP project needs, locally</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>A PHP version per project</h3>
+          <p>Run a legacy app on PHP 7.4 next to a new one on 8.5. Install more versions from the app, and <code>php</code> in a project folder uses that project’s version.</p>
+        </article>
+        <article class="card">
+          <h3>Folders become <code>.test</code> sites</h3>
+          <p>Every folder in a parked directory is served at <code>http://folder.test</code>. Link any other folder in one click.</p>
+        </article>
+        <article class="card">
+          <h3>One-click HTTPS</h3>
+          <p>A local certificate authority, limited to <code>.test</code> and <code>localhost</code>, issues trusted certificates for your sites.</p>
+        </article>
+        <article class="card">
+          <h3>New project</h3>
+          <p>Start a Laravel, WordPress or plain PHP project with its database created and wired into <code>.env</code> or <code>wp-config.php</code>.</p>
+        </article>
+        <article class="card">
+          <h3>Works next to XAMPP and Herd</h3>
+          <p>See which program is holding a port, stop it on request, and import projects and databases from XAMPP or Laravel Herd without changing them.</p>
+        </article>
+        <article class="card">
+          <h3>App, tray and CLI</h3>
+          <p>A desktop app with a tray icon for the day to day, and the <code>ampls</code> command for everything else.</p>
+        </article>
+      </div>
+
+      <div class="terminal" role="region" aria-label="CLI example">
+        <div class="term-bar" aria-hidden="true"><span></span><span></span><span></span></div>
+<pre><code><span class="c"># serve a folder, pin its PHP version, enable HTTPS</span>
+<span class="p">&gt;</span> cd D:\work\shop
+<span class="p">&gt;</span> ampls link
+<span class="p">&gt;</span> ampls isolate 8.3
+<span class="p">&gt;</span> ampls secure
+<span class="c"># bring projects over from Laravel Herd</span>
+<span class="p">&gt;</span> ampls import herd --dry-run</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="releases" class="releases" aria-labelledby="releases-title">
+    <div class="wrap">
+      <h2 id="releases-title" class="section-title">All releases</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Version</th><th scope="col">Build</th><th scope="col">Released</th><th scope="col">Size</th><th scope="col"><span class="sr">Download</span></th></tr></thead>
+          <tbody data-r-table="releases">
+            <tr><td>1.0.0</td><td>19</td><td>1 Oct 2026</td><td>79 MB</td><td><a href="uploads/1.0.0/AMPLS-Setup-1.0.0.exe" download>Download</a></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap foot-row">
+    <div class="brand small"><img src="assets/logo-64.png" width="22" height="22" alt=""><span>AMPLS</span></div>
+    <p class="muted">Apache, MySQL, PHP: Latest Software. MIT licensed. Bundled components keep their own licenses: see <a href="https://github.com/akashsahay1/ample/blob/main/THIRD_PARTY_NOTICES.md">third-party notices</a>.</p>
+    <p class="muted"><a href="https://github.com/akashsahay1/ample/blob/main/docs/USER_GUIDE.md">User guide</a> · <a href="https://github.com/akashsahay1/ample/blob/main/CHANGELOG.md">Changelog</a> · <a href="https://github.com/akashsahay1/ample">Source</a></p>
+  </div>
+</footer>
+
+<script src="releases.js"></script>
+<script src="assets/site.js"></script>
+</body>
+</html>
