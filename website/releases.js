@@ -2,15 +2,15 @@
 window.AMPLS_RELEASES = {
     "product":  "AMPLS",
     "latest":  "1.0.0",
-    "updated":  "2026-10-01T09:59:07Z",
+    "updated":  "2026-10-01T10:09:59Z",
     "releases":  [
                      {
                          "version":  "1.0.0",
                          "build":  19,
                          "date":  "2026-10-01",
                          "file":  "uploads/1.0.0/AMPLS-Setup-1.0.0.exe",
-                         "size":  82934865,
-                         "sha256":  "237b9b386f17a4320696a68b2138baa81c572fa42cae08a0a62d7c3b501abab3",
+                         "size":  83344150,
+                         "sha256":  "cdcf58b098c1e6f6c9b4a20177de36fd261485ca5ed5dce3994a27ec34c961a9",
                          "components":  {
                                             "apache":  "2.4.68",
                                             "mod_fcgid":  "2.3.10",
