@@ -6,11 +6,11 @@ import (
 )
 
 func TestRenderIni(t *testing.T) {
-	s := RenderIni(3307, `C:\AMPLS`)
+	s := RenderIni(3307, `C:\Apnoro`)
 	for _, want := range []string{
-		`basedir="C:/AMPLS/mysql"`, `datadir="C:/AMPLS/data/mysql"`, "port=3307",
-		"bind-address=127.0.0.1", "mysqlx=OFF", `log-error="C:/AMPLS/logs/mysql.log"`,
-		`pid-file="C:/AMPLS/run/mysqld-internal.pid"`, "character-set-server=utf8mb4",
+		`basedir="C:/Apnoro/mysql"`, `datadir="C:/Apnoro/data/mysql"`, "port=3307",
+		"bind-address=127.0.0.1", "mysqlx=OFF", `log-error="C:/Apnoro/logs/mysql.log"`,
+		`pid-file="C:/Apnoro/run/mysqld-internal.pid"`, "character-set-server=utf8mb4",
 	} {
 		if !strings.Contains(s, want) {
 			t.Errorf("missing %q", want)

@@ -141,7 +141,7 @@ function SiteRow({site, php, defaultPhp, last}: {site: Site; php: PHPVersion[]; 
               title: `Unlink ${site.domain}?`,
               body: (
                 <>
-                  AMPLS will stop serving <b>{site.domain}</b>. The folder <span className="font-mono">{site.path}</span> is not deleted.
+                  Apnoro will stop serving <b>{site.domain}</b>. The folder <span className="font-mono">{site.path}</span> is not deleted.
                 </>
               ),
               confirmLabel: 'Unlink',
@@ -277,8 +277,8 @@ export default function Sites() {
           <SquareTerminal size={18} color="#9AA3FF" aria-hidden />
           <span className="text-[13px]">Same thing from a terminal:</span>
           <span className="selectable truncate font-mono text-xs text-[#9AA3FF]">cd {example.path}</span>
-          <span className="font-mono text-xs text-warn">ampls isolate 8.3</span>
-          <span className="font-mono text-xs text-[#3FA9C9]">ampls secure</span>
+          <span className="font-mono text-xs text-warn">apnoro isolate 8.3</span>
+          <span className="font-mono text-xs text-[#3FA9C9]">apnoro secure</span>
           <span className="grow" />
           <span className="text-xs whitespace-nowrap text-shell-muted">
             <span className="font-mono">php</span> in that folder now runs 8.3

@@ -1,4 +1,4 @@
-# AMPLS website
+# Apnoro website
 
 A static one-page site: no build step, no server code. Upload this whole folder to any web host.
 
@@ -9,7 +9,7 @@ website/
   favicon.ico
   releases.json         release list: version, build, date, file, size, sha256, components
   releases.js           the same data for the page (works from file:// and any host)
-  uploads/<version>/AMPLS-Setup-<version>.exe
+  uploads/<version>/Apnoro-Setup-<version>.exe
 ```
 
 ## Publishing a release
@@ -30,5 +30,5 @@ Installers are **not committed** (`website/uploads/**/*.exe` is git-ignored); on
 To register an installer built elsewhere:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\publish-site.ps1 -Version 1.0.0 -Build 19 -Installer dist\AMPLS-Setup-1.0.0.exe
+powershell -ExecutionPolicy Bypass -File scripts\publish-site.ps1 -Version 1.0.0 -Build 19 -Installer dist\Apnoro-Setup-1.0.0.exe
 ```

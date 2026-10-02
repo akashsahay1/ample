@@ -7,14 +7,14 @@ import (
 	"strings"
 	"testing"
 
-	"ampls/internal/paths"
+	"apnoro/internal/paths"
 )
 
 var home string
 
 func TestMain(m *testing.M) {
 	var err error
-	home, err = os.MkdirTemp("", "ampls-shim-test")
+	home, err = os.MkdirTemp("", "apnoro-shim-test")
 	if err != nil {
 		panic(err)
 	}
@@ -92,7 +92,7 @@ func TestResolveVersion(t *testing.T) {
 		t.Fatalf("outside site: %s", v)
 	}
 
-	// .ampls-php wins, found walking up
+	// .apnoro-php wins, found walking up
 	os.WriteFile(filepath.Join(site, VersionFile), []byte("\xef\xbb\xbf8.3\r\n"), 0o644)
 	v, src, _ = ResolveVersion(filepath.Join(site, "app", "Http"))
 	if v != "8.3" || !strings.HasPrefix(src, VersionFile) {

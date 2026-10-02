@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"ampls/internal/paths"
+	"apnoro/internal/paths"
 )
 
 func mustContain(t *testing.T, s string, subs ...string) {
@@ -19,33 +19,33 @@ func mustContain(t *testing.T, s string, subs ...string) {
 }
 
 func TestRenderMain(t *testing.T) {
-	home := `C:\AMPLS Data`
-	cgi := `C:\AMPLS Data\php\8.5\php-cgi.exe`
+	home := `C:\Apnoro Data`
+	cgi := `C:\Apnoro Data\php\8.5\php-cgi.exe`
 	s := RenderMain(Options{HTTPPort: 8080, HTTPSPort: 8443, DefaultPHPCGI: cgi}, home, false)
 	mustContain(t, s,
-		`ServerRoot "C:/AMPLS Data/apache"`,
+		`ServerRoot "C:/Apnoro Data/apache"`,
 		"Listen 127.0.0.1:8080",
 		"LoadModule fcgid_module modules/mod_fcgid.so",
 		"LoadModule socache_shmcb_module modules/mod_socache_shmcb.so",
-		`PidFile "C:/AMPLS Data/run/httpd-internal.pid"`,
-		`ErrorLog "C:/AMPLS Data/logs/apache-error.log"`,
-		`CustomLog "C:/AMPLS Data/logs/apache-access.log" combined`,
+		`PidFile "C:/Apnoro Data/run/httpd-internal.pid"`,
+		`ErrorLog "C:/Apnoro Data/logs/apache-error.log"`,
+		`CustomLog "C:/Apnoro Data/logs/apache-access.log" combined`,
 		"FcgidMaxRequestLen 268435456",
 		"FcgidInitialEnv SystemRoot",
 		"FcgidInitialEnv PHP_FCGI_MAX_REQUESTS 1000",
-		`FcgidInitialEnv TEMP "C:/AMPLS Data/tmp"`,
+		`FcgidInitialEnv TEMP "C:/Apnoro Data/tmp"`,
 		"<VirtualHost *:8080>",
-		`DocumentRoot "C:/AMPLS Data/www"`,
-		`Alias /phpmyadmin "C:/AMPLS Data/apps/phpmyadmin"`,
-		`FcgidWrapper "C:/AMPLS Data/php/8.5/php-cgi.exe" .php`,
-		`FcgidInitialEnv PHPRC "C:/AMPLS Data/php/8.5"`,
-		`IncludeOptional "C:/AMPLS Data/conf/sites/*.conf"`,
-		`"shmcb:C:/AMPLS Data/run/ssl_scache(512000)"`,
+		`DocumentRoot "C:/Apnoro Data/www"`,
+		`Alias /phpmyadmin "C:/Apnoro Data/apps/phpmyadmin"`,
+		`FcgidWrapper "C:/Apnoro Data/php/8.5/php-cgi.exe" .php`,
+		`FcgidInitialEnv PHPRC "C:/Apnoro Data/php/8.5"`,
+		`IncludeOptional "C:/Apnoro Data/conf/sites/*.conf"`,
+		`"shmcb:C:/Apnoro Data/run/ssl_scache(512000)"`,
 	)
 	if strings.Contains(s, "Listen 127.0.0.1:8443") {
 		t.Error("https listen without secure vhosts")
 	}
-	if strings.Contains(s, `\`+"AMPLS") {
+	if strings.Contains(s, `\`+"Apnoro") {
 		t.Error("backslash path in config")
 	}
 	s2 := RenderMain(Options{DefaultPHPCGI: cgi}, home, true)
@@ -59,7 +59,7 @@ func TestRenderMain(t *testing.T) {
 func TestRenderVHost(t *testing.T) {
 	v := VHost{
 		Domain: "blog.test", Aliases: []string{"*.blog.test"},
-		DocRoot: `C:\Users\me\Sites\blog\public`, PHPCGI: `C:\AMPLS\php\8.3\php-cgi.exe`,
+		DocRoot: `C:\Users\me\Sites\blog\public`, PHPCGI: `C:\Apnoro\php\8.3\php-cgi.exe`,
 	}
 	s := RenderVHost(v, Options{})
 	mustContain(t, s,
@@ -67,17 +67,17 @@ func TestRenderVHost(t *testing.T) {
 		`DocumentRoot "C:/Users/me/Sites/blog/public"`,
 		`<Directory "C:/Users/me/Sites/blog/public">`,
 		"Options Indexes FollowSymLinks ExecCGI", "AllowOverride All", "Require all granted",
-		"SetHandler fcgid-script", `FcgidWrapper "C:/AMPLS/php/8.3/php-cgi.exe" .php`,
+		"SetHandler fcgid-script", `FcgidWrapper "C:/Apnoro/php/8.3/php-cgi.exe" .php`,
 		"DirectoryIndex index.php index.html",
 	)
 	if strings.Contains(s, "SSLEngine") {
 		t.Error("not secure")
 	}
-	v.Secure, v.CertFile, v.KeyFile = true, `C:\AMPLS\certs\sites\blog.test.crt`, `C:\AMPLS\certs\sites\blog.test.key`
+	v.Secure, v.CertFile, v.KeyFile = true, `C:\Apnoro\certs\sites\blog.test.crt`, `C:\Apnoro\certs\sites\blog.test.key`
 	s = RenderVHost(v, Options{HTTPSPort: 8443})
 	mustContain(t, s, "<VirtualHost *:80>", "<VirtualHost *:8443>", "SSLEngine on",
-		`SSLCertificateFile "C:/AMPLS/certs/sites/blog.test.crt"`,
-		`SSLCertificateKeyFile "C:/AMPLS/certs/sites/blog.test.key"`)
+		`SSLCertificateFile "C:/Apnoro/certs/sites/blog.test.crt"`,
+		`SSLCertificateKeyFile "C:/Apnoro/certs/sites/blog.test.key"`)
 	if strings.Contains(s, "Redirect") {
 		t.Error("no forced redirect")
 	}

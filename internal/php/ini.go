@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"ampls/internal/paths"
+	"apnoro/internal/paths"
 )
 
 // Settings is the editable subset of php.ini.
@@ -39,7 +39,7 @@ func extDir(minor string) string { return filepath.Join(paths.PHPDir(minor), "ex
 
 func slash(p string) string { return filepath.ToSlash(p) }
 
-// EnsureIni creates php.ini from php.ini-development with AMPLS defaults if it
+// EnsureIni creates php.ini from php.ini-development with Apnoro defaults if it
 // does not exist yet.
 func EnsureIni(minor string) error {
 	ini := IniPath(minor)

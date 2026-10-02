@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Downloads the AMPLS runtime payload (Apache, mod_fcgid, PHP, MySQL, phpMyAdmin, cacert,
+  Downloads the Apnoro runtime payload (Apache, mod_fcgid, PHP, MySQL, phpMyAdmin, cacert,
   Composer, VC++ redist) into dist\cache and assembles dist\payload with the data-dir layout
   from docs\CONTRACTS.md.
 
@@ -215,15 +215,15 @@ $secret = -join ($bytes | ForEach-Object { $chars[$_ % $chars.Length] })
 $pmaCfg = @"
 <?php
 /**
- * AMPLS phpMyAdmin configuration (shipped once; never overwritten on upgrade).
- * MySQL port is read from the AMPLS config.json (<data dir>/config.json -> ports.mysql).
+ * Apnoro phpMyAdmin configuration (shipped once; never overwritten on upgrade).
+ * MySQL port is read from the Apnoro config.json (<data dir>/config.json -> ports.mysql).
  */
-`$amplsPort = 3306;
-`$amplsCfgFile = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config.json';
-if (is_readable(`$amplsCfgFile)) {
-    `$amplsCfg = json_decode((string) file_get_contents(`$amplsCfgFile), true);
-    if (is_array(`$amplsCfg) && !empty(`$amplsCfg['ports']['mysql'])) {
-        `$amplsPort = (int) `$amplsCfg['ports']['mysql'];
+`$apnoroPort = 3306;
+`$apnoroCfgFile = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config.json';
+if (is_readable(`$apnoroCfgFile)) {
+    `$apnoroCfg = json_decode((string) file_get_contents(`$apnoroCfgFile), true);
+    if (is_array(`$apnoroCfg) && !empty(`$apnoroCfg['ports']['mysql'])) {
+        `$apnoroPort = (int) `$apnoroCfg['ports']['mysql'];
     }
 }
 
@@ -233,7 +233,7 @@ if (is_readable(`$amplsCfgFile)) {
 `$i++;
 `$cfg['Servers'][`$i]['auth_type'] = 'cookie';
 `$cfg['Servers'][`$i]['host'] = '127.0.0.1';
-`$cfg['Servers'][`$i]['port'] = (string) `$amplsPort;
+`$cfg['Servers'][`$i]['port'] = (string) `$apnoroPort;
 `$cfg['Servers'][`$i]['compress'] = false;
 `$cfg['Servers'][`$i]['AllowNoPassword'] = true;
 

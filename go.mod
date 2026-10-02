@@ -1,4 +1,4 @@
-module ampls
+module apnoro
 
 go 1.26.0
 

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"ampls/internal/api"
+	"apnoro/internal/api"
 )
 
 // Mock coexistence: XAMPP 8.2.12 running on :80/:3306, Laravel Herd stopped,

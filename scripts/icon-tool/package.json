@@ -1,8 +1,8 @@
 {
-  "name": "ampls-icon-tool",
+  "name": "apnoro-icon-tool",
   "private": true,
   "type": "module",
-  "description": "Regenerates AMPLS icons (PNG/ICO/ICNS/BMP) from assets/icon/ampls_launcher.png",
+  "description": "Regenerates Apnoro icons (PNG/ICO/ICNS/BMP) from assets/icon/apnoro_launcher.png",
   "scripts": {
     "generate": "node generate.mjs"
   },

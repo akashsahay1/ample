@@ -17,14 +17,14 @@ import (
 
 // UserAgent is sent with every request; some mirrors (Apache Lounge,
 // windows.php.net) reject Go's default user agent.
-const UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36 AMPLS/1.0"
+const UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36 Apnoro/1.0"
 
 // ProgressFunc reports bytes downloaded so far and the total (-1 if unknown).
 type ProgressFunc func(done, total int64)
 
 var client = &http.Client{Timeout: 0}
 
-// Get performs a GET with the AMPLS user agent and returns the body (caller closes).
+// Get performs a GET with the Apnoro user agent and returns the body (caller closes).
 func Get(ctx context.Context, url string) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

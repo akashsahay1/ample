@@ -50,7 +50,7 @@ func inRootStore(location uint32, thumb []byte) bool {
 // the installer) or for the current user (Windows shows a confirmation dialog).
 //
 // The certificate is read and checked once (it must match ca.key and carry the
-// AMPLS name constraints) and those exact bytes are added through CryptoAPI.
+// Apnoro name constraints) and those exact bytes are added through CryptoAPI.
 // Shelling out to `certutil -addstore Root <Home>\certs\ca.crt` would let any
 // local user (the data dir is user-writable) swap ca.crt for their own
 // unconstrained CA between the check and the elevated certutil run.
@@ -63,7 +63,7 @@ func TrustCA(machine bool) error {
 		return fmt.Errorf("certs: trust: %w", err)
 	}
 	if !constrained(c) {
-		return fmt.Errorf("certs: trust: refusing to trust a CA without the AMPLS name constraints")
+		return fmt.Errorf("certs: trust: refusing to trust a CA without the Apnoro name constraints")
 	}
 	loc := uint32(windows.CERT_SYSTEM_STORE_CURRENT_USER)
 	if machine {

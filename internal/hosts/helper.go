@@ -39,7 +39,7 @@ func RunHelperContext(ctx context.Context, home string) error {
 		}
 		release()
 	} else {
-		log.Printf("ampls-helper: %v", err)
+		log.Printf("apnoro-helper: %v", err)
 	}
 	var last time.Time
 	if release, err := lockDir(runDir); err == nil {
@@ -52,7 +52,7 @@ func RunHelperContext(ctx context.Context, home string) error {
 	logOnce := func(err error) {
 		if msg := err.Error(); msg != lastErr {
 			lastErr = msg
-			log.Printf("ampls-helper: %s", msg)
+			log.Printf("apnoro-helper: %s", msg)
 		}
 	}
 	process := func() {
@@ -74,7 +74,7 @@ func RunHelperContext(ctx context.Context, home string) error {
 			logOnce(err)
 		} else {
 			lastErr = ""
-			log.Printf("ampls-helper: applied %d domains", len(req.Domains))
+			log.Printf("apnoro-helper: applied %d domains", len(req.Domains))
 		}
 	}
 

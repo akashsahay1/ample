@@ -24,12 +24,12 @@ func stopTray() { systray.Quit() }
 func trayReady(app *App) {
 	icons := map[string][]byte{"running": iconRunning(), "stopped": iconStopped(), "partial": iconPartial()}
 	systray.SetIcon(icons["stopped"])
-	systray.SetTitle("AMPLS")
-	systray.SetTooltip("AMPLS")
+	systray.SetTitle("Apnoro")
+	systray.SetTooltip("Apnoro")
 	systray.SetOnClick(func(systray.IMenu) { app.ShowWindow() })
 	systray.SetOnDClick(func(systray.IMenu) { app.ShowWindow() })
 
-	systray.AddMenuItem("Open AMPLS", "Show the AMPLS window").Click(app.ShowWindow)
+	systray.AddMenuItem("Open Apnoro", "Show the Apnoro window").Click(app.ShowWindow)
 	systray.AddSeparator()
 	systray.AddMenuItem("Start all", "Start Apache and MySQL").Click(func() { go func() { app.notifyError(app.StartAll()) }() })
 	systray.AddMenuItem("Stop all", "Stop Apache and MySQL").Click(func() { go func() { app.notifyError(app.StopAll()) }() })
@@ -46,7 +46,7 @@ func trayReady(app *App) {
 		}
 	})
 	systray.AddSeparator()
-	systray.AddMenuItem("Quit AMPLS", "").Click(func() {
+	systray.AddMenuItem("Quit Apnoro", "").Click(func() {
 		if app.ctx != nil {
 			app.Quit()
 		}
@@ -64,12 +64,12 @@ func trayReady(app *App) {
 				stopped++
 			}
 		}
-		state, tip := "running", "AMPLS — all services running"
+		state, tip := "running", "Apnoro — all services running"
 		switch {
 		case stopped == len(ov.Services):
-			state, tip = "stopped", "AMPLS — services stopped"
+			state, tip = "stopped", "Apnoro — services stopped"
 		case stopped > 0:
-			state, tip = "partial", fmt.Sprintf("AMPLS — %d stopped", stopped)
+			state, tip = "partial", fmt.Sprintf("Apnoro — %d stopped", stopped)
 		}
 		if state != last {
 			systray.SetIcon(icons[state])

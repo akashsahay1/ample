@@ -1,4 +1,4 @@
-// Command ampls is the AMPLS command line interface (bin\ampls.exe).
+// Command apnoro is the Apnoro command line interface (bin\apnoro.exe).
 package main
 
 import (
@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"ampls/internal/core"
-	"ampls/internal/paths"
+	"apnoro/internal/core"
+	"apnoro/internal/paths"
 )
 
 // version is set at build time: -ldflags "-X main.version=1.2.3".
@@ -21,9 +21,9 @@ var homeFlag string
 
 func newRootCmd() *cobra.Command {
 	root := &cobra.Command{
-		Use:   "ampls",
-		Short: "AMPLS - Apache, MySQL, PHP (Latest Software) for local development",
-		Long: `AMPLS runs Apache, MySQL and multiple PHP versions for local PHP development.
+		Use:   "apnoro",
+		Short: "Apnoro - Apache, PHP and MySQL for local development",
+		Long: `Apnoro runs Apache, MySQL and multiple PHP versions for local PHP development.
 
 Every folder inside a parked directory is served as http://<folder>.test;
 individual folders can be linked, pinned to a PHP version and served over HTTPS.`,
@@ -35,7 +35,7 @@ individual folders can be linked, pinned to a PHP version and served over HTTPS.
 			}
 		},
 	}
-	root.PersistentFlags().StringVar(&homeFlag, "home", "", "AMPLS data directory (overrides data-dir.txt and $AMPLS_HOME)")
+	root.PersistentFlags().StringVar(&homeFlag, "home", "", "Apnoro data directory (overrides data-dir.txt and $APNORO_HOME)")
 	root.CompletionOptions.HiddenDefaultCmd = true
 
 	root.AddGroup(

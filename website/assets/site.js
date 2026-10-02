@@ -1,9 +1,9 @@
 // Renders the latest release (version, build, size, checksum, components) and the
-// release list from window.AMPLS_RELEASES (releases.js, written by
+// release list from window.APNORO_RELEASES (releases.js, written by
 // scripts/publish-site.ps1). The HTML already holds the current values, so the
 // page still works when this script cannot run.
 (function () {
-  var data = window.AMPLS_RELEASES;
+  var data = window.APNORO_RELEASES;
   if (!data || !data.releases || !data.releases.length) return;
   var latest = data.releases[0];
 
@@ -60,7 +60,7 @@
       var a = text('a', 'Download');
       a.href = r.file;
       a.setAttribute('download', '');
-      a.setAttribute('aria-label', 'Download AMPLS ' + r.version);
+      a.setAttribute('aria-label', 'Download Apnoro ' + r.version);
       td.appendChild(a);
       tr.appendChild(td);
       body.appendChild(tr);

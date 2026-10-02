@@ -8,15 +8,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"ampls/internal/paths"
+	"apnoro/internal/paths"
 )
 
 func shQuote(s string) string { return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'" }
 
-// elevateApply runs `ampls hosts apply` with administrator privileges via
+// elevateApply runs `apnoro hosts apply` with administrator privileges via
 // osascript (macOS) or sudo -n elsewhere.
 func elevateApply() error {
-	exe := filepath.Join(paths.BinDir(), "ampls")
+	exe := filepath.Join(paths.BinDir(), "apnoro")
 	shell := shQuote(exe) + " hosts apply --home " + shQuote(paths.Home())
 	var cmd *exec.Cmd
 	if _, err := exec.LookPath("osascript"); err == nil {

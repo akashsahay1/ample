@@ -19,7 +19,7 @@ import (
 var WordPressURL = "https://wordpress.org/latest.zip"
 
 func createWordPress(ctx context.Context, r Request, target string, progress ProgressFunc) error {
-	tmp, err := os.CreateTemp("", "ampls-wordpress-*.zip")
+	tmp, err := os.CreateTemp("", "apnoro-wordpress-*.zip")
 	if err != nil {
 		return fmt.Errorf("projects: wordpress: %w", err)
 	}
@@ -68,7 +68,7 @@ func downloadFile(ctx context.Context, url, dest string, progress func(done, tot
 	if err != nil {
 		return err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AMPLS")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Apnoro")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err

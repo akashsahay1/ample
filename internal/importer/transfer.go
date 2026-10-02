@@ -14,14 +14,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"ampls/internal/paths"
-	"ampls/internal/services"
+	"apnoro/internal/paths"
+	"apnoro/internal/services"
 )
 
 func quoteIdent(name string) string { return "`" + strings.ReplaceAll(name, "`", "``") + "`" }
 
 // dumpTool returns the mysqldump to use for s: the source's own when known,
-// else AMPLS's.
+// else Apnoro's.
 func dumpTool(s *server) string {
 	if s.BinDir != "" {
 		for _, n := range []string{"mysqldump", "mariadb-dump"} {
@@ -82,7 +82,7 @@ func MapCollation(c string) string {
 	return string(out)
 }
 
-// prepareTarget creates (or recreates when overwrite) the AMPLS database with
+// prepareTarget creates (or recreates when overwrite) the Apnoro database with
 // the source's default charset/collation. existed reports it was already there.
 func prepareTarget(ctx context.Context, dst *server, name, cs, coll string, overwrite bool) (existed bool, err error) {
 	err = dst.with(ctx, func(ctx context.Context, db *sql.DB) error {
@@ -109,7 +109,7 @@ func prepareTarget(ctx context.Context, dst *server, name, cs, coll string, over
 		return err
 	})
 	if err != nil {
-		return existed, fmt.Errorf("AMPLS MySQL: prepare %s: %w", name, err)
+		return existed, fmt.Errorf("Apnoro MySQL: prepare %s: %w", name, err)
 	}
 	return existed, nil
 }
@@ -134,7 +134,7 @@ func copyDatabase(parent context.Context, src, dst *server, name string, serverM
 	}
 	mysqlExe := filepath.Join(paths.MySQLDir(), "bin", paths.Exe("mysql"))
 	if !fileExists(mysqlExe) {
-		return fmt.Errorf("AMPLS mysql client not found (%s)", mysqlExe)
+		return fmt.Errorf("Apnoro mysql client not found (%s)", mysqlExe)
 	}
 	srcCnf, err := clientCnf(src)
 	if err != nil {
@@ -207,7 +207,7 @@ func copyDatabase(parent context.Context, src, dst *server, name string, serverM
 	case parent.Err() != nil:
 		return parent.Err()
 	case iErr != nil:
-		return fmt.Errorf("import into AMPLS failed: %v: %s", iErr, lastLines(impErr.String(), 4))
+		return fmt.Errorf("import into Apnoro failed: %v: %s", iErr, lastLines(impErr.String(), 4))
 	case dErr != nil:
 		return fmt.Errorf("mysqldump failed: %v: %s", dErr, lastLines(dumpErr.String(), 4))
 	case filterErr != nil:

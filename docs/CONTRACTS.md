@@ -1,11 +1,11 @@
-# AMPLS — engineering contracts
+# Apnoro — engineering contracts
 
-AMPLS = Apache, MySQL, PHP — Latest Software. A Windows-first (macOS later) local PHP dev
+Apnoro (formerly AMPLS): Apache, PHP and MySQL for Windows. A Windows-first (macOS later) local PHP dev
 environment: XAMPP-style bundled stack + Laravel Herd-style per-project PHP versions.
 
-Go module: `ampls` (Go 1.25+). GUI: Wails v2 + React/TS/Tailwind in `frontend/`.
-Every package here is shared by the GUI (`AMPLS.exe`), the CLI (`ampls.exe`), the php shim
-(`php.exe`) and the hosts helper service (`ampls-helper.exe`).
+Go module: `apnoro` (Go 1.25+). GUI: Wails v2 + React/TS/Tailwind in `frontend/`.
+Every package here is shared by the GUI (`Apnoro.exe`), the CLI (`apnoro.exe`), the php shim
+(`php.exe`) and the hosts helper service (`apnoro-helper.exe`).
 
 ## Ground rules for all contributors
 - **Only edit the files/packages you own** (see Ownership). Shared files (`internal/paths`,
@@ -21,7 +21,7 @@ Every package here is shared by the GUI (`AMPLS.exe`), the CLI (`ampls.exe`), th
 - Every package ships unit tests for its pure logic (`go test ./internal/...` must pass).
 - Paths always come from `internal/paths`. Config from `internal/config`.
 
-## Data directory layout (`paths.Home()`, user-chosen, default `C:\AMPLS`)
+## Data directory layout (`paths.Home()`, user-chosen, default `C:\Apnoro`)
 ```
 apache/                 Apache Lounge httpd (bin/httpd.exe, modules/, incl. mod_fcgid.so)
 php/<minor>/            e.g. php/8.5/  php.exe, php-cgi.exe, ext/, php.ini (generated)
@@ -38,9 +38,9 @@ www/                    default localhost page
 downloads/ tmp/         scratch
 config.json             internal/config
 ```
-Install dir (`paths.InstallDir()`, e.g. `C:\Program Files\AMPLS`):
-`AMPLS.exe`, `data-dir.txt`, `bin\ampls.exe`, `bin\php.exe` (shim), `bin\composer.phar`,
-`bin\composer.bat`, `bin\ampls-helper.exe`. `bin\` is on PATH.
+Install dir (`paths.InstallDir()`, e.g. `C:\Program Files\Apnoro`):
+`Apnoro.exe`, `data-dir.txt`, `bin\apnoro.exe`, `bin\php.exe` (shim), `bin\composer.phar`,
+`bin\composer.bat`, `bin\apnoro-helper.exe`. `bin\` is on PATH.
 
 ## How per-site PHP works
 Apache + **mod_fcgid**. Every vhost's `<Directory>` gets
@@ -143,23 +143,23 @@ func DetectFramework(path string) string // "laravel" | "wordpress" | "php"
 ```
 
 ### `internal/hosts` — owner: Agent B
-Hosts file edits need admin. AMPLS installs `ampls-helper.exe` as a LocalSystem Windows
-service that applies a validated managed block. Fallback: UAC-elevated `ampls.exe hosts apply`.
+Hosts file edits need admin. Apnoro installs `apnoro-helper.exe` as a LocalSystem Windows
+service that applies a validated managed block. Fallback: UAC-elevated `apnoro.exe hosts apply`.
 ```go
-const BeginMarker = "# BEGIN AMPLS"; const EndMarker = "# END AMPLS"
+const BeginMarker = "# BEGIN APNORO"; const EndMarker = "# END APNORO"
 func Render(existing string, domains []string) string // pure: replaces/appends managed block, 127.0.0.1 + ::1 lines
 func Validate(domains []string, tld string) error     // each is <label>.<tld> or sub.<label>.<tld>, strict charset
 func Current() ([]string, error)                      // domains inside managed block
 func Apply(domains []string) error                    // direct write (requires admin)
-func Request(domains []string, tld string) error      // non-admin entry point: no-op if already applied; else write run/hosts.json and wait (<=5s) for helper; else elevate `ampls.exe hosts apply`
+func Request(domains []string, tld string) error      // non-admin entry point: no-op if already applied; else write run/hosts.json and wait (<=5s) for helper; else elevate `apnoro.exe hosts apply`
 func HostsPath() string
-// service side (Windows): cmd/ampls-helper uses these
+// service side (Windows): cmd/apnoro-helper uses these
 func RunHelper(home string) error                     // loop: watch run/hosts.json, Validate, Apply, write run/hosts.applied.json
 ```
 
 ### `internal/certs` — owner: Agent B
 ```go
-func EnsureCA() error                                   // certs/ca.crt + ca.key, RSA 2048/ECDSA P-256, 10y, CN "AMPLS Local CA"
+func EnsureCA() error                                   // certs/ca.crt + ca.key, RSA 2048/ECDSA P-256, 10y, CN "Apnoro Local CA"
 func CAPath() string
 func IsCATrusted() bool                                 // Windows: certutil -user -verifystore Root / cert store lookup
 func TrustCA(machine bool) error                        // certutil [-user] -addstore Root
@@ -186,18 +186,18 @@ func Create(ctx context.Context, r Request, progress func(msg string, pct float6
 ### `internal/shim` + `cmd/php-shim` — owner: Agent B
 ```go
 func ResolveVersion(cwd string) (minor string, source string, err error)
-// order: nearest ".ampls-php" file walking up (content "8.3"); site containing cwd (config override); cfg.DefaultPHP; newest installed
+// order: nearest ".apnoro-php" file walking up (content "8.3"); site containing cwd (config override); cfg.DefaultPHP; newest installed
 ```
 `cmd/php-shim/main.go` builds to `bin/php.exe`: resolves, then runs `<Home>/php/<minor>/php.exe`
 with all args, stdio passthrough, same exit code. Must be fast (no network, no heavy init).
 
-### `internal/core` + `cmd/ampls` — owner: lead (after A & B)
+### `internal/core` + `cmd/apnoro` — owner: lead (after A & B)
 `core.New()` implements `api.Backend` by orchestrating the packages above.
-CLI: `ampls start|stop|restart|status|sites|park|unpark|link|unlink|isolate|unisolate|secure|unsecure|php:list|php:install|php:use|php:remove|db:list|db:create|logs|open|setup|hosts apply|trust`.
+CLI: `apnoro start|stop|restart|status|sites|park|unpark|link|unlink|isolate|unisolate|secure|unsecure|php:list|php:install|php:use|php:remove|db:list|db:create|logs|open|setup|hosts apply|trust`.
 
 ### GUI — owner: Agent C
 `main.go`, `app.go`, `tray*.go`, `internal/api/mock/`, `frontend/`. The Wails-bound `App`
-wraps an `api.Backend` (mock when `AMPLS_MOCK=1` or build tag `mock`). Design mockups:
+wraps an `api.Backend` (mock when `APNORO_MOCK=1` or build tag `mock`). Design mockups:
 `docs/design/*.dc.html` (open in a browser to view; also https://claude.ai/artifact/DZ57JdMKQPbB4rway2TBjW).
 
 ### Installer & build — owner: Agent D

@@ -9,16 +9,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	"ampls/internal/apache"
-	"ampls/internal/api"
-	"ampls/internal/certs"
-	"ampls/internal/config"
-	"ampls/internal/mysql"
-	"ampls/internal/paths"
-	"ampls/internal/php"
-	"ampls/internal/projects"
-	"ampls/internal/services"
-	"ampls/internal/sites"
+	"apnoro/internal/apache"
+	"apnoro/internal/api"
+	"apnoro/internal/certs"
+	"apnoro/internal/config"
+	"apnoro/internal/mysql"
+	"apnoro/internal/paths"
+	"apnoro/internal/php"
+	"apnoro/internal/projects"
+	"apnoro/internal/services"
+	"apnoro/internal/sites"
 )
 
 func cleanPath(p string) string { return filepath.Clean(strings.TrimSpace(p)) }
@@ -330,8 +330,8 @@ func tail(path string, n int) (string, error) {
 // ---------- setup (installer) ----------
 
 type SetupOptions struct {
-	ParkDefault    bool   // create and park %USERPROFILE%\AMPLS\Sites
-	TrustCAMachine bool   // add the CA to the machine Root store (needs admin; the installer uses `ampls trust --machine` instead)
+	ParkDefault    bool   // create and park %USERPROFILE%\Apnoro\Sites
+	TrustCAMachine bool   // add the CA to the machine Root store (needs admin; the installer uses `apnoro trust --machine` instead)
 	MySQLPassword  string // root password for a fresh MySQL datadir ("" = none); ignored when already initialized
 }
 
@@ -418,7 +418,7 @@ func (c *Core) Setup(opts SetupOptions, log func(string)) error {
 		return err
 	}
 	if opts.TrustCAMachine {
-		log("Trusting the AMPLS certificate")
+		log("Trusting the Apnoro certificate")
 		if err := certs.TrustCA(true); err != nil {
 			log("warning: could not trust certificate: " + err.Error())
 		}

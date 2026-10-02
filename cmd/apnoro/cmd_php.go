@@ -8,9 +8,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"ampls/internal/api"
-	"ampls/internal/php"
-	"ampls/internal/shim"
+	"apnoro/internal/api"
+	"apnoro/internal/php"
+	"apnoro/internal/shim"
 )
 
 func addPHPCommands(root *cobra.Command) {
@@ -19,7 +19,7 @@ func addPHPCommands(root *cobra.Command) {
 			Use:     "php:list",
 			Aliases: []string{"php"},
 			Short:   "List installed and available PHP versions",
-			Long:    "List installed PHP versions and the versions available to install.\n\nExample:\n  ampls php:list",
+			Long:    "List installed PHP versions and the versions available to install.\n\nExample:\n  apnoro php:list",
 			GroupID: "php",
 			Args:    cobra.NoArgs,
 			RunE:    runPHPList,
@@ -27,7 +27,7 @@ func addPHPCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "php:install <version>",
 			Short:   "Download and install a PHP version",
-			Long:    "Download and install a PHP version (NTS x64 from windows.php.net).\n\nExamples:\n  ampls php:install 8.4\n  ampls php:install 7.4",
+			Long:    "Download and install a PHP version (NTS x64 from windows.php.net).\n\nExamples:\n  apnoro php:install 8.4\n  apnoro php:install 7.4",
 			GroupID: "php",
 			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -52,7 +52,7 @@ func addPHPCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "php:use <version>",
 			Short:   "Set the default PHP version",
-			Long:    "Set the default PHP version used by all sites that are not isolated, and by\nthe php command outside any site.\n\nExample:\n  ampls php:use 8.3",
+			Long:    "Set the default PHP version used by all sites that are not isolated, and by\nthe php command outside any site.\n\nExample:\n  apnoro php:use 8.3",
 			GroupID: "php",
 			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -67,7 +67,7 @@ func addPHPCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "php:remove <version>",
 			Short:   "Uninstall a PHP version",
-			Long:    "Remove an installed PHP version. It must not be the default or pinned by a site.\n\nExample:\n  ampls php:remove 8.1",
+			Long:    "Remove an installed PHP version. It must not be the default or pinned by a site.\n\nExample:\n  apnoro php:remove 8.1",
 			GroupID: "php",
 			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -82,7 +82,7 @@ func addPHPCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "php:ini [version]",
 			Short:   "Print the path of a PHP version's php.ini",
-			Long:    "Print the php.ini path for a PHP version (default: the default version).\n\nExamples:\n  ampls php:ini\n  notepad (ampls php:ini 8.3)",
+			Long:    "Print the php.ini path for a PHP version (default: the default version).\n\nExamples:\n  apnoro php:ini\n  notepad (apnoro php:ini 8.3)",
 			GroupID: "php",
 			Args:    cobra.MaximumNArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -108,7 +108,7 @@ func addPHPCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "which-php",
 			Short:   "Show which PHP version the php command uses here",
-			Long:    "Resolve the PHP version for the current directory the same way the php\ncommand does (.ampls-php file, site isolation, default).\n\nExample:\n  ampls which-php",
+			Long:    "Resolve the PHP version for the current directory the same way the php\ncommand does (.apnoro-php file, site isolation, default).\n\nExample:\n  apnoro which-php",
 			GroupID: "php",
 			Args:    cobra.NoArgs,
 			RunE: func(cmd *cobra.Command, args []string) error {

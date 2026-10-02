@@ -36,7 +36,7 @@ func main() {
 	startTray(app)
 
 	err := wails.Run(&options.App{
-		Title:            "AMPLS",
+		Title:            "Apnoro",
 		Width:            1280,
 		Height:           800,
 		MinWidth:         1024,
@@ -49,7 +49,7 @@ func main() {
 		OnBeforeClose:    app.beforeClose,
 		OnShutdown:       app.shutdown,
 		SingleInstanceLock: &options.SingleInstanceLock{
-			UniqueId: "com.ampls.app",
+			UniqueId: "com.apnoro.app",
 			OnSecondInstanceLaunch: func(options.SecondInstanceData) {
 				app.ShowWindow()
 			},

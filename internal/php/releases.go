@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"ampls/internal/download"
+	"apnoro/internal/download"
 )
 
 const (

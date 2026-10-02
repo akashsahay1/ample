@@ -10,3 +10,5 @@ scripts/icon-tool/node_modules/
 
 # website installers are uploaded to the web host, not committed
 website/uploads/**/*.exe
+/website.zip
+*.zip

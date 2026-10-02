@@ -13,7 +13,7 @@ import (
 
 	"golang.org/x/sys/windows"
 
-	"ampls/internal/paths"
+	"apnoro/internal/paths"
 )
 
 var (
@@ -101,11 +101,11 @@ func runElevated(exe string, args []string) (uint32, error) {
 }
 
 func elevateApply() error {
-	// Always the ampls.exe installed next to this binary (absolute, derived
+	// Always the apnoro.exe installed next to this binary (absolute, derived
 	// from os.Executable), never a name resolved via PATH or the cwd.
-	exe := filepath.Join(paths.BinDir(), "ampls.exe")
+	exe := filepath.Join(paths.BinDir(), "apnoro.exe")
 	if !filepath.IsAbs(exe) {
-		return fmt.Errorf("cannot locate ampls.exe (install dir %q is not absolute)", paths.BinDir())
+		return fmt.Errorf("cannot locate apnoro.exe (install dir %q is not absolute)", paths.BinDir())
 	}
 	if _, err := os.Stat(exe); err != nil {
 		return fmt.Errorf("%s not found: %w", exe, err)
@@ -118,13 +118,13 @@ func elevateApply() error {
 		if a, err := readApplied(paths.RunDir()); err == nil && a.Error != "" {
 			return errors.New(a.Error)
 		}
-		return fmt.Errorf("ampls hosts apply exited with code %d", code)
+		return fmt.Errorf("apnoro hosts apply exited with code %d", code)
 	}
 	return nil
 }
 
 // systemExe returns the absolute path of a System32 tool, so privileged
-// callers (the LocalSystem helper, elevated `ampls`) never resolve it via PATH.
+// callers (the LocalSystem helper, elevated `apnoro`) never resolve it via PATH.
 func systemExe(name string) string {
 	dir, err := windows.GetSystemDirectory()
 	if err != nil || dir == "" {

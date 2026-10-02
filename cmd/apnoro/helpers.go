@@ -10,11 +10,11 @@ import (
 	"sync"
 	"text/tabwriter"
 
-	"ampls/internal/api"
-	"ampls/internal/config"
-	"ampls/internal/core"
-	"ampls/internal/php"
-	"ampls/internal/sites"
+	"apnoro/internal/api"
+	"apnoro/internal/config"
+	"apnoro/internal/core"
+	"apnoro/internal/php"
+	"apnoro/internal/sites"
 )
 
 // ---------- backend ----------
@@ -50,7 +50,7 @@ func loadConfig() (*config.Config, error) {
 	return cfg, nil
 }
 
-var errNotInSite = errors.New("not inside an AMPLS site; run `ampls link` first")
+var errNotInSite = errors.New("not inside an Apnoro site; run `apnoro link` first")
 
 // siteForCwd returns the site containing the current directory.
 func siteForCwd() (api.Site, error) {
@@ -82,7 +82,7 @@ func resolveSite(name string) (api.Site, error) {
 	name = strings.TrimSuffix(name, "."+cfg.TLD)
 	s, ok := sites.Find(cfg, name)
 	if !ok {
-		return api.Site{}, fmt.Errorf("no site named %q (see `ampls sites`)", name)
+		return api.Site{}, fmt.Errorf("no site named %q (see `apnoro sites`)", name)
 	}
 	return s, nil
 }

@@ -50,7 +50,7 @@ export const ENV_NAMES: Record<string, string> = {
   mysql: 'MySQL server',
 }
 
-/** Kinds whose own servers AMPLS can stop on request. */
+/** Kinds whose own servers Apnoro can stop on request. */
 export const STOPPABLE_KINDS = ['xampp', 'herd', 'laragon', 'wamp']
 
 export interface Progress {
@@ -61,8 +61,8 @@ export interface Progress {
   error: string
 }
 
-export const PROGRESS_EVENT = 'ampls:progress'
-export const STATUS_EVENT = 'ampls:status'
+export const PROGRESS_EVENT = 'apnoro:progress'
+export const STATUS_EVENT = 'apnoro:status'
 
 export const ProjectKind = {Laravel: 'laravel', WordPress: 'wordpress', Blank: 'blank'} as const
 export type ProjectKind = (typeof ProjectKind)[keyof typeof ProjectKind]

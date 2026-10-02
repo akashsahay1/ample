@@ -1,9 +1,9 @@
-// Package paths resolves every filesystem location AMPLS uses.
+// Package paths resolves every filesystem location Apnoro uses.
 //
 // Two roots exist:
-//   - InstallDir: where the programs live (AMPLS.exe, bin\ampls.exe, bin\php.exe shim).
+//   - InstallDir: where the programs live (Apnoro.exe, bin\apnoro.exe, bin\php.exe shim).
 //     Read-only at runtime.
-//   - Home: the user-chosen data directory (default C:\AMPLS on Windows). Holds the
+//   - Home: the user-chosen data directory (default C:\Apnoro on Windows). Holds the
 //     runtimes (Apache, PHP versions, MySQL), generated configs, certs, logs and data.
 package paths
 
@@ -15,7 +15,7 @@ import (
 	"sync"
 )
 
-// HomeFileName is written by the installer next to AMPLS.exe and contains the data dir.
+// HomeFileName is written by the installer next to Apnoro.exe and contains the data dir.
 const HomeFileName = "data-dir.txt"
 
 var (
@@ -24,19 +24,19 @@ var (
 	home         string
 )
 
-// SetHome forces the data directory (used by `ampls setup --home` and tests).
+// SetHome forces the data directory (used by `apnoro setup --home` and tests).
 // Must be called before the first call to Home.
 func SetHome(dir string) { homeOverride = dir }
 
-// Home returns the AMPLS data directory.
-// Resolution order: SetHome, $AMPLS_HOME, <InstallDir>/data-dir.txt, OS default.
+// Home returns the Apnoro data directory.
+// Resolution order: SetHome, $APNORO_HOME, <InstallDir>/data-dir.txt, OS default.
 func Home() string {
 	homeOnce.Do(func() {
 		switch {
 		case homeOverride != "":
 			home = homeOverride
-		case os.Getenv("AMPLS_HOME") != "":
-			home = os.Getenv("AMPLS_HOME")
+		case os.Getenv("APNORO_HOME") != "":
+			home = os.Getenv("APNORO_HOME")
 		default:
 			if b, err := os.ReadFile(filepath.Join(InstallDir(), HomeFileName)); err == nil {
 				if s := strings.TrimSpace(string(b)); s != "" {
@@ -55,18 +55,18 @@ func Home() string {
 func defaultHome() string {
 	switch runtime.GOOS {
 	case "windows":
-		return `C:\AMPLS`
+		return `C:\Apnoro`
 	case "darwin":
 		h, _ := os.UserHomeDir()
-		return filepath.Join(h, "Library", "Application Support", "AMPLS")
+		return filepath.Join(h, "Library", "Application Support", "Apnoro")
 	default:
 		h, _ := os.UserHomeDir()
-		return filepath.Join(h, ".ampls")
+		return filepath.Join(h, ".apnoro")
 	}
 }
 
-// InstallDir is the directory holding AMPLS.exe. Binaries in <InstallDir>/bin
-// (ampls.exe, php.exe shim) resolve to the parent directory.
+// InstallDir is the directory holding Apnoro.exe. Binaries in <InstallDir>/bin
+// (apnoro.exe, php.exe shim) resolve to the parent directory.
 func InstallDir() string {
 	exe, err := os.Executable()
 	if err != nil {
@@ -110,10 +110,10 @@ func ConfigFile() string         { return filepath.Join(Home(), "config.json") }
 // ComposerPhar is bundled next to the php shim.
 func ComposerPhar() string { return filepath.Join(ShimsDir(), "composer.phar") }
 
-// DefaultSitesDir is the folder parked on first run (~/AMPLS/Sites).
+// DefaultSitesDir is the folder parked on first run (~/Apnoro/Sites).
 func DefaultSitesDir() string {
 	h, _ := os.UserHomeDir()
-	return filepath.Join(h, "AMPLS", "Sites")
+	return filepath.Join(h, "Apnoro", "Sites")
 }
 
 // EnsureDirs creates the writable directory tree under Home.

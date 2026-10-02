@@ -11,13 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"ampls/internal/download"
-	"ampls/internal/paths"
-	"ampls/internal/services"
+	"apnoro/internal/download"
+	"apnoro/internal/paths"
+	"apnoro/internal/services"
 )
 
 // VersionFile inside each version dir caches the full version ("8.3.12").
-const VersionFile = ".ampls-version"
+const VersionFile = ".apnoro-version"
 
 // Installed is a PHP version present on disk.
 type Installed struct {

@@ -24,7 +24,7 @@ interface AppState {
   route: Route
   go: (r: Route) => void
   overview: Overview | null
-  /** ports AMPLS needs that another program holds (polled with the overview) */
+  /** ports Apnoro needs that another program holds (polled with the overview) */
   conflicts: PortConflict[]
   /** increments on every status change; screens reload their data when it changes */
   tick: number

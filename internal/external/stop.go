@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"ampls/internal/api"
-	"ampls/internal/paths"
-	"ampls/internal/services"
+	"apnoro/internal/api"
+	"apnoro/internal/paths"
+	"apnoro/internal/services"
 )
 
 // EnvRoots returns every directory whose processes belong to kind
@@ -50,7 +50,7 @@ func RunningMySQL(kind string) (Proc, bool) {
 // left running.
 //
 // XAMPP's apache_stop.bat / mysql_stop.bat are deliberately NOT used: the first
-// kills every httpd.exe on the machine by image name (AMPLS's included) and the
+// kills every httpd.exe on the machine by image name (Apnoro's included) and the
 // second shuts down whatever answers on the default port.
 func Stop(kind string) error {
 	roots := EnvRoots(kind)
@@ -133,7 +133,7 @@ func waitExit(pid int, d time.Duration) {
 }
 
 // herdCLIStop runs `herd stop` with Herd's own PHP (not via herd.bat, which
-// resolves `php` from PATH and could pick AMPLS's shim).
+// resolves `php` from PATH and could pick Apnoro's shim).
 func herdCLIStop() {
 	root, ok := Root(api.EnvHerd)
 	if !ok {

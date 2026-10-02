@@ -1,9 +1,9 @@
-// Package hosts manages the AMPLS block in the system hosts file.
+// Package hosts manages the Apnoro block in the system hosts file.
 //
 // Writing the hosts file needs administrator rights. On Windows the
-// ampls-helper service (LocalSystem) watches <Home>/run/hosts.json and applies
+// apnoro-helper service (LocalSystem) watches <Home>/run/hosts.json and applies
 // a strictly validated block (see RunHelper). When the helper is not running,
-// Request falls back to a UAC-elevated `ampls.exe hosts apply`, which calls
+// Request falls back to a UAC-elevated `apnoro.exe hosts apply`, which calls
 // ApplyPending.
 package hosts
 
@@ -20,13 +20,29 @@ import (
 	"strings"
 	"time"
 
-	"ampls/internal/paths"
+	"apnoro/internal/paths"
 )
 
 const (
-	BeginMarker = "# BEGIN AMPLS"
-	EndMarker   = "# END AMPLS"
+	BeginMarker = "# BEGIN APNORO"
+	EndMarker   = "# END APNORO"
 )
+
+// markerPairs are the managed blocks render removes: the current one plus the
+// block written by AMPLS, the product's former name, so an upgrade cleans it up.
+var markerPairs = [][2]string{
+	{BeginMarker, EndMarker},
+	{"# BEGIN AMPLS", "# END AMPLS"},
+}
+
+func isEndMarker(t string) bool {
+	for _, p := range markerPairs {
+		if t == p[1] {
+			return true
+		}
+	}
+	return false
+}
 
 // MaxDomains caps the number of domains accepted in a single request.
 const MaxDomains = 2000
@@ -104,31 +120,36 @@ func render(existing string, domains []string, nl string) string {
 	existing = strings.TrimPrefix(existing, "\ufeff")
 	lines := strings.Split(strings.ReplaceAll(existing, "\r\n", "\n"), "\n")
 	var kept []string
-	in := false
+	end := "" // end marker of the block being skipped, "" when outside a block
 	for i := 0; i < len(lines); i++ {
 		l := strings.TrimRight(lines[i], "\r")
 		t := strings.TrimSpace(l)
-		if !in && t == BeginMarker {
-			// only treat it as a block if a matching end marker follows
-			hasEnd := false
-			for _, r := range lines[i+1:] {
-				if strings.TrimSpace(r) == EndMarker {
-					hasEnd = true
-					break
+		if end == "" {
+			begin := false
+			for _, p := range markerPairs {
+				if t != p[0] {
+					continue
+				}
+				begin = true
+				// only treat it as a block if a matching end marker follows
+				for _, r := range lines[i+1:] {
+					if strings.TrimSpace(r) == p[1] {
+						end = p[1]
+						break
+					}
 				}
 			}
-			if hasEnd {
-				in = true
+			if begin {
+				continue // a dangling begin marker is dropped
 			}
-			continue // a dangling begin marker is dropped
 		}
-		if in {
-			if t == EndMarker {
-				in = false
+		if end != "" {
+			if t == end {
+				end = ""
 			}
 			continue
 		}
-		if t == EndMarker {
+		if isEndMarker(t) {
 			continue // stray end marker
 		}
 		kept = append(kept, l)
@@ -147,7 +168,7 @@ func render(existing string, domains []string, nl string) string {
 			b.WriteString(nl)
 		}
 		b.WriteString(BeginMarker + nl)
-		b.WriteString("# Managed by AMPLS. Do not edit this block; changes will be overwritten." + nl)
+		b.WriteString("# Managed by Apnoro. Do not edit this block; changes will be overwritten." + nl)
 		for _, d := range ds {
 			b.WriteString("127.0.0.1 " + d + nl)
 			b.WriteString("::1 " + d + nl)
@@ -193,12 +214,12 @@ func Validate(domains []string, tld string) error {
 	return nil
 }
 
-// AllowedTLDs are the only TLDs AMPLS ever writes to the system hosts file.
+// AllowedTLDs are the only TLDs Apnoro ever writes to the system hosts file.
 // They are fixed here, not read from config.json or run/hosts.json: both live
 // in the user-writable data directory, and the hosts file is machine-wide and
 // written with admin/LocalSystem rights. Both are reserved names (RFC 2606 /
 // RFC 6761) that can never be real internet domains, so a non-admin user or
-// malware cannot use AMPLS to redirect e.g. windowsupdate.com.
+// malware cannot use Apnoro to redirect e.g. windowsupdate.com.
 var AllowedTLDs = map[string]bool{"test": true, "localhost": true}
 
 // TLDAllowed reports whether tld is one of AllowedTLDs.
@@ -379,7 +400,7 @@ func writeApplied(runDir string, r AppliedResult) error {
 // Request is the non-admin entry point. It is a no-op when the hosts file
 // already contains exactly domains; otherwise it asks the helper service via
 // run/hosts.json (waiting up to 5s) and falls back to an elevated
-// `ampls.exe hosts apply`.
+// `apnoro.exe hosts apply`.
 func Request(domains []string, tld string) error {
 	domains = normalize(domains)
 	if !AllowedTLDs[tld] {
@@ -431,7 +452,7 @@ func Request(domains []string, tld string) error {
 }
 
 // ApplyPending reads run/hosts.json, validates it and applies it, recording
-// the outcome in run/hosts.applied.json. It is what `ampls hosts apply` (run
+// the outcome in run/hosts.applied.json. It is what `apnoro hosts apply` (run
 // elevated) calls. The request file is user-writable, so its "tld" field is
 // ignored and every domain is checked against the fixed AllowedTLDs.
 func ApplyPending() error {

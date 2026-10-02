@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"ampls/internal/paths"
+	"apnoro/internal/paths"
 )
 
 func TestWriteConfigRejectsInjection(t *testing.T) {
@@ -16,7 +16,7 @@ func TestWriteConfigRejectsInjection(t *testing.T) {
 	bad := []VHost{
 		{Domain: "a.test", DocRoot: home + "/x\"\nLoadModule evil_module evil.so\n#", PHPCGI: cgi},
 		{Domain: "a.test", DocRoot: home + "/x\nInclude /etc/passwd", PHPCGI: cgi},
-		{Domain: "a.test", DocRoot: home + "/${AMPLS_HOME}", PHPCGI: cgi},
+		{Domain: "a.test", DocRoot: home + "/${APNORO_HOME}", PHPCGI: cgi},
 		{Domain: "a.test\nLoadModule x y", DocRoot: home, PHPCGI: cgi},
 		{Domain: "a.test", Aliases: []string{"*.a.test b.test"}, DocRoot: home, PHPCGI: cgi},
 		{Domain: "a.test", DocRoot: home, PHPCGI: cgi + "\"x"},
@@ -39,7 +39,7 @@ func TestWriteConfigRejectsInjection(t *testing.T) {
 // The first *:http vhost (Apache's fallback for unknown Host headers) must deny
 // everything, so DNS rebinding cannot reach localhost/phpMyAdmin.
 func TestRenderMainDefaultVHostDenies(t *testing.T) {
-	s := RenderMain(Options{HTTPPort: 80}, `C:\AMPLS`, false)
+	s := RenderMain(Options{HTTPPort: 80}, `C:\Apnoro`, false)
 	first := strings.Index(s, "<VirtualHost *:80>")
 	end := strings.Index(s[first:], "</VirtualHost>")
 	block := s[first : first+end]

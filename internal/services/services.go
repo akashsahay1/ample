@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"ampls/internal/paths"
+	"apnoro/internal/paths"
 )
 
 // State of a managed service. (CONTRACTS.md named this type Status, which
@@ -71,7 +71,7 @@ func Start(name string, exe string, args []string, logFile string) error {
 	if err != nil {
 		return fmt.Errorf("services: %s: open log: %w", name, err)
 	}
-	fmt.Fprintf(lf, "\n[%s] AMPLS starting %s\n", time.Now().Format(time.RFC3339), name)
+	fmt.Fprintf(lf, "\n[%s] Apnoro starting %s\n", time.Now().Format(time.RFC3339), name)
 	pid, err := startDetached(exe, args, lf)
 	lf.Close()
 	if err != nil {

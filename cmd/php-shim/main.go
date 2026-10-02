@@ -11,8 +11,8 @@ import (
 	"os/signal"
 	"path/filepath"
 
-	"ampls/internal/paths"
-	"ampls/internal/shim"
+	"apnoro/internal/paths"
+	"apnoro/internal/shim"
 )
 
 func main() {
@@ -22,15 +22,15 @@ func main() {
 	}
 	minor, source, err := shim.ResolveVersion(cwd)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "ampls php:", err)
+		fmt.Fprintln(os.Stderr, "apnoro php:", err)
 		os.Exit(1)
 	}
 	exe := filepath.Join(paths.PHPDir(minor), paths.Exe("php"))
-	if os.Getenv("AMPLS_SHIM_DEBUG") == "1" {
-		fmt.Fprintf(os.Stderr, "ampls php: version %s (from %s) -> %s\n", minor, source, exe)
+	if os.Getenv("APNORO_SHIM_DEBUG") == "1" {
+		fmt.Fprintf(os.Stderr, "apnoro php: version %s (from %s) -> %s\n", minor, source, exe)
 	}
 	if _, err := os.Stat(exe); err != nil {
-		fmt.Fprintf(os.Stderr, "ampls php: PHP %s (selected by %s) is not installed; run `ampls php:install %s`\n", minor, source, minor)
+		fmt.Fprintf(os.Stderr, "apnoro php: PHP %s (selected by %s) is not installed; run `apnoro php:install %s`\n", minor, source, minor)
 		os.Exit(1)
 	}
 
@@ -44,7 +44,7 @@ func main() {
 		if errors.As(err, &ee) {
 			os.Exit(ee.ExitCode())
 		}
-		fmt.Fprintln(os.Stderr, "ampls php:", err)
+		fmt.Fprintln(os.Stderr, "apnoro php:", err)
 		os.Exit(1)
 	}
 }

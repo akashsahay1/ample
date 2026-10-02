@@ -16,7 +16,7 @@ const userHosts = "# Copyright (c) Microsoft\r\n127.0.0.1 localhost\r\n10.0.0.5 
 func TestRenderAppendAndIdempotent(t *testing.T) {
 	out := render(userHosts, []string{"blog.test", "Shop.test", "blog.test"}, "\r\n")
 	want := "# Copyright (c) Microsoft\r\n127.0.0.1 localhost\r\n10.0.0.5 nas.lan # my nas\r\n\r\n" +
-		BeginMarker + "\r\n# Managed by AMPLS. Do not edit this block; changes will be overwritten.\r\n" +
+		BeginMarker + "\r\n# Managed by Apnoro. Do not edit this block; changes will be overwritten.\r\n" +
 		"127.0.0.1 blog.test\r\n::1 blog.test\r\n127.0.0.1 shop.test\r\n::1 shop.test\r\n" + EndMarker + "\r\n"
 	if out != want {
 		t.Fatalf("got:\n%q\nwant:\n%q", out, want)
@@ -304,5 +304,19 @@ func TestHelperRejectsPublicTLD(t *testing.T) {
 	h, _ := os.ReadFile(hostsFile)
 	if string(h) != userHosts {
 		t.Fatal("hosts modified")
+	}
+}
+
+func TestRenderRemovesLegacyAMPLSBlock(t *testing.T) {
+	in := "127.0.0.1 localhost\n# BEGIN AMPLS\n127.0.0.1 blog.test\n::1 blog.test\n# END AMPLS\n10.0.0.5 nas\n"
+	out := render(in, []string{"blog.test"}, "\n")
+	if strings.Contains(out, "AMPLS") {
+		t.Fatalf("legacy block not removed:\n%s", out)
+	}
+	if strings.Count(out, "127.0.0.1 blog.test") != 1 || !strings.Contains(out, BeginMarker) {
+		t.Fatalf("want exactly one new block entry:\n%s", out)
+	}
+	if !strings.Contains(out, "10.0.0.5 nas") || !strings.Contains(out, "127.0.0.1 localhost") {
+		t.Fatalf("user lines lost:\n%s", out)
 	}
 }

@@ -1,6 +1,6 @@
 // Package external detects other local PHP stacks installed on this machine
 // (XAMPP, Laravel Herd, Laragon, WampServer), tells which of them hold the ports
-// AMPLS needs, stops them on request and reads their site configuration so the
+// Apnoro needs, stops them on request and reads their site configuration so the
 // importer can bring projects over.
 //
 // Everything here is read-only except Stop, which only ever terminates processes
@@ -17,13 +17,13 @@ import (
 	"sync"
 	"time"
 
-	"ampls/internal/api"
-	"ampls/internal/paths"
-	"ampls/internal/services"
+	"apnoro/internal/api"
+	"apnoro/internal/paths"
+	"apnoro/internal/services"
 )
 
-// EnvAMPLS is returned by Classify/PHPOnPath for AMPLS's own executables.
-const EnvAMPLS = "ampls"
+// EnvApnoro is returned by Classify/PHPOnPath for Apnoro's own executables.
+const EnvApnoro = "apnoro"
 
 // Kinds lists the environments Detect looks for, in display order.
 var Kinds = []string{api.EnvXAMPP, api.EnvHerd, api.EnvLaragon, api.EnvWAMP}
@@ -84,7 +84,7 @@ func Detect() ([]api.ExternalEnv, error) {
 			e := describe(k, root, procs)
 			if phpPath != "" && phpEnv == k && Under(phpPath, root) {
 				e.OnPath = true
-				e.Notes = append(e.Notes, "Its php ("+phpPath+") is first on PATH, so `php` in a terminal runs "+e.Name+"'s PHP instead of AMPLS's.")
+				e.Notes = append(e.Notes, "Its php ("+phpPath+") is first on PATH, so `php` in a terminal runs "+e.Name+"'s PHP instead of Apnoro's.")
 			}
 			out = append(out, e)
 		}
@@ -226,7 +226,7 @@ func dedupPaths(in []string) []string {
 }
 
 // Classify returns the environment kind owning exe ("" when unknown,
-// EnvAMPLS for AMPLS's own binaries).
+// EnvApnoro for Apnoro's own binaries).
 func Classify(exe string) string { return classifyPath(exe, allRoots()) }
 
 func classifyPath(exe string, roots map[string][]string) string {
@@ -234,7 +234,7 @@ func classifyPath(exe string, roots map[string][]string) string {
 		return ""
 	}
 	if Under(exe, paths.Home()) || Under(exe, paths.BinDir()) {
-		return EnvAMPLS
+		return EnvApnoro
 	}
 	for _, k := range Kinds {
 		for _, r := range roots[k] {
@@ -287,7 +287,7 @@ func portOwnerIn(port int, procs []Proc, roots map[string][]string) (api.PortCon
 }
 
 // Conflicts reports which of the given ports (service name -> port) are held
-// by programs other than AMPLS itself.
+// by programs other than Apnoro itself.
 func Conflicts(ports map[string]int) []api.PortConflict {
 	procs := Processes()
 	roots := allRoots()
@@ -303,7 +303,7 @@ func Conflicts(ports map[string]int) []api.PortConflict {
 			continue
 		}
 		c, ok := portOwnerIn(port, procs, roots)
-		if !ok || c.Env == EnvAMPLS {
+		if !ok || c.Env == EnvApnoro {
 			continue
 		}
 		c.Service = svc
@@ -314,7 +314,7 @@ func Conflicts(ports map[string]int) []api.PortConflict {
 }
 
 // PHPOnPath returns the first php executable on PATH and the environment it
-// belongs to (a kind, EnvAMPLS, or "" when unknown).
+// belongs to (a kind, EnvApnoro, or "" when unknown).
 func PHPOnPath() (path string, env string) {
 	path = findOnPath("php")
 	if path == "" {

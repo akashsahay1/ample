@@ -1,4 +1,4 @@
-// Package sites discovers the sites AMPLS serves: every immediate subfolder of a
+// Package sites discovers the sites Apnoro serves: every immediate subfolder of a
 // parked directory plus explicitly linked folders, each served as <name>.<tld>.
 package sites
 
@@ -10,8 +10,8 @@ import (
 	"sort"
 	"strings"
 
-	"ampls/internal/api"
-	"ampls/internal/config"
+	"apnoro/internal/api"
+	"apnoro/internal/config"
 )
 
 var validName = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`)

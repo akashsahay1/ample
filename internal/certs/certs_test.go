@@ -14,11 +14,11 @@ import (
 	"testing"
 	"time"
 
-	"ampls/internal/paths"
+	"apnoro/internal/paths"
 )
 
 func TestMain(m *testing.M) {
-	dir, err := os.MkdirTemp("", "ampls-certs-test")
+	dir, err := os.MkdirTemp("", "apnoro-certs-test")
 	if err != nil {
 		panic(err)
 	}

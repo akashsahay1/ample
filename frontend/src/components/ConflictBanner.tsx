@@ -34,7 +34,7 @@ function stopBody(kind: string, root?: string) {
   const again = kind === 'xampp' ? 'the XAMPP Control Panel' : kind === 'herd' ? 'the Herd app' : name
   return (
     <>
-      AMPLS will stop {what}
+      Apnoro will stop {what}
       {where(root)}. No other programs are stopped, and {name}'s files, settings, sites and databases are not changed.
       <br />
       <br />
@@ -43,7 +43,7 @@ function stopBody(kind: string, root?: string) {
   )
 }
 
-/** Confirm, then stop another environment's servers; optionally start AMPLS afterwards. */
+/** Confirm, then stop another environment's servers; optionally start Apnoro afterwards. */
 export function useStopEnvironment() {
   const {confirm, run, toast} = useApp()
   return async (kind: string, opts: {root?: string; startAfter?: boolean} = {}) => {
@@ -61,9 +61,9 @@ export function useStopEnvironment() {
     if (done && opts.startAfter) {
       try {
         await backend.StartAll()
-        toast('success', 'AMPLS services started')
+        toast('success', 'Apnoro services started')
       } catch (e) {
-        toast('error', `${name} stopped, but AMPLS could not start: ${e instanceof Error ? e.message : String(e)}`)
+        toast('error', `${name} stopped, but Apnoro could not start: ${e instanceof Error ? e.message : String(e)}`)
       }
     }
     return !!done
@@ -116,7 +116,7 @@ function ServiceConflict({service, items}: {service: string; items: PortConflict
           <strong>
             {portList(ports)} used by {owner}.
           </strong>{' '}
-          AMPLS {label} can't start until {ports.length > 1 ? "they're" : "it's"} free.
+          Apnoro {label} can't start until {ports.length > 1 ? "they're" : "it's"} free.
         </div>
         {first.path && (
           <div className="selectable truncate font-mono text-xs text-[#7A5410]" title={first.path}>
@@ -136,7 +136,7 @@ function ServiceConflict({service, items}: {service: string; items: PortConflict
   )
 }
 
-/** Shown at the top of Dashboard, Sites and Import while another program holds an AMPLS port. */
+/** Shown at the top of Dashboard, Sites and Import while another program holds an Apnoro port. */
 export default function ConflictBanner() {
   const {conflicts} = useApp()
   if (!conflicts.length) return null

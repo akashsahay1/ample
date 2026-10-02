@@ -1,4 +1,4 @@
-# Building AMPLS
+# Building Apnoro
 
 ## Prerequisites (Windows 11 x64)
 
@@ -19,23 +19,23 @@ runtime download.
 powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -Version 1.0.0
 ```
 
-Output: `dist\AMPLS-Setup-1.0.0.exe`. `-Version` defaults to `info.productVersion` in `wails.json`.
+Output: `dist\Apnoro-Setup-1.0.0.exe`. `-Version` defaults to `info.productVersion` in `wails.json`.
 
 | Switch | Effect |
 |---|---|
-| `-SkipGui` | skip `wails build` (reuse `dist\app\AMPLS.exe`) |
+| `-SkipGui` | skip `wails build` (reuse `dist\app\Apnoro.exe`) |
 | `-SkipInstaller` | stop after assembling `dist\app` |
 | `-Compression none` | fast test installer (default `lzma2/ultra64` takes a few minutes) |
 
 Steps it runs:
 1. `go build` (`CGO_ENABLED=0`, `-ldflags "-s -w -X main.version=<ver>"`):
-   `cmd/ampls` → `dist\app\bin\ampls.exe`, `cmd/php-shim` → `dist\app\bin\php.exe`,
-   `cmd/ampls-helper` → `dist\app\bin\ampls-helper.exe`
+   `cmd/apnoro` → `dist\app\bin\apnoro.exe`, `cmd/php-shim` → `dist\app\bin\php.exe`,
+   `cmd/apnoro-helper` → `dist\app\bin\apnoro-helper.exe`
 2. `wails build -clean -platform windows/amd64 -ldflags "-X main.version=<ver>"` →
-   `build\bin\AMPLS.exe` → `dist\app\AMPLS.exe`
+   `build\bin\Apnoro.exe` → `dist\app\Apnoro.exe`
 3. `scripts\fetch-runtimes.ps1` if `dist\payload\versions.json` is missing
 4. copies `composer.phar` + `composer.bat` into `dist\app\bin`
-5. `ISCC installer\ampls.iss /DAppVersion=<ver>`
+5. `ISCC installer\apnoro.iss /DAppVersion=<ver>`
 
 `dist\` is build output and git-ignored.
 
@@ -73,7 +73,7 @@ To update runtimes: delete `dist\cache\<file>` (or pass `-Force`) and run the sc
 
 ## Icons (`scripts\icon-tool`)
 
-The source SVGs are in `assets\icon\` (`ampls.svg`, the simplified `ampls-32.svg` and `ampls-16.svg`,
+The source SVGs are in `assets\icon\` (`apnoro.svg`, the simplified `apnoro-32.svg` and `apnoro-16.svg`,
 and `tray-{running,stopped,error}.svg`), taken from the approved `docs\design\Icon.dc.html`.
 
 ```powershell
@@ -91,31 +91,31 @@ Inno Setup wizard BMPs `installer-wizard-{large,small}-{100,125,150,175,200}.bmp
 2. Run `scripts\build.ps1 -Version X.Y.Z` (this sets `main.version` in every binary, `AppVersion` in
    the installer and the output file name).
 
-The installer `AppId` GUID in `installer\ampls.iss` must never change, so upgrades install in place.
+The installer `AppId` GUID in `installer\apnoro.iss` must never change, so upgrades install in place.
 Upgrades keep the data folder chosen earlier, never overwrite `apps\phpmyadmin\config.inc.php`, and only
-ever ship runtimes. `data\`, `conf\`, `certs\`, `config.json` and `php.ini` are created by `ampls setup`.
+ever ship runtimes. `data\`, `conf\`, `certs\`, `config.json` and `php.ini` are created by `apnoro setup`.
 
 ## Code signing and SmartScreen
 
 The installer and exes are unsigned for now, so Windows SmartScreen shows "Windows protected your PC"
 until the file builds up reputation. Users have to click **More info → Run anyway**. For public releases,
-get an OV/EV code-signing certificate (or use Azure Trusted Signing) and sign `AMPLS.exe`, `bin\*.exe`
+get an OV/EV code-signing certificate (or use Azure Trusted Signing) and sign `Apnoro.exe`, `bin\*.exe`
 and the setup:
 - In Inno Setup, add `SignTool=...` to `[Setup]`, with `signtool sign /fd sha256 /tr http://timestamp.digicert.com /td sha256 ...`.
 - Sign the binaries in `dist\app` before running ISCC.
 
 ## macOS (future)
 
-- GUI: `wails build -platform darwin/universal -ldflags "-X main.version=X.Y.Z"` → `build/bin/AMPLS.app`.
+- GUI: `wails build -platform darwin/universal -ldflags "-X main.version=X.Y.Z"` → `build/bin/Apnoro.app`.
   Wails uses `build/appicon.png` to make the `.icns`; `assets/icons/app.icns` is also generated.
 - CLI and helper: `GOOS=darwin GOARCH=arm64` and `amd64` builds, joined with `lipo -create`, placed in
-  `AMPLS.app/Contents/Resources/bin` (or installed to `/usr/local/bin` by a `.pkg`).
+  `Apnoro.app/Contents/Resources/bin` (or installed to `/usr/local/bin` by a `.pkg`).
 - Runtimes: there are no official zip builds of httpd or PHP for macOS. Options are a pinned Homebrew
   bottle set, static-php-cli builds of PHP, and MySQL's macOS tar.gz. A `fetch-runtimes-macos.sh` would
   mirror the Windows script.
 - Signing with the Apple Developer ID:
-  `codesign --deep --force --options runtime --timestamp --sign "Developer ID Application: <Name> (<TEAMID>)" AMPLS.app`
+  `codesign --deep --force --options runtime --timestamp --sign "Developer ID Application: <Name> (<TEAMID>)" Apnoro.app`
   (sign every bundled Mach-O binary first, with hardened runtime and entitlements).
-- Notarize: `xcrun notarytool submit AMPLS.dmg --apple-id ... --team-id ... --password <app-specific> --wait`,
-  then `xcrun stapler staple AMPLS.dmg`.
-- DMG: `create-dmg --volname AMPLS --app-drop-link 480 170 AMPLS-X.Y.Z.dmg build/bin/AMPLS.app`.
+- Notarize: `xcrun notarytool submit Apnoro.dmg --apple-id ... --team-id ... --password <app-specific> --wait`,
+  then `xcrun stapler staple Apnoro.dmg`.
+- DMG: `create-dmg --volname Apnoro --app-drop-link 480 170 Apnoro-X.Y.Z.dmg build/bin/Apnoro.app`.

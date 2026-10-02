@@ -9,7 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"ampls/internal/api"
+	"apnoro/internal/api"
 )
 
 func addEnvCommands(root *cobra.Command) {
@@ -18,7 +18,7 @@ func addEnvCommands(root *cobra.Command) {
 	env := &cobra.Command{
 		Use:     "env",
 		Short:   "Show other local stacks and port conflicts",
-		Long:    "List XAMPP, Laravel Herd, Laragon and WAMP installs found on this machine,\nand any program holding a port AMPLS needs.\n\nExample:\n  ampls env",
+		Long:    "List XAMPP, Laravel Herd, Laragon and WAMP installs found on this machine,\nand any program holding a port Apnoro needs.\n\nExample:\n  apnoro env",
 		GroupID: "env",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -70,8 +70,8 @@ func addEnvCommands(root *cobra.Command) {
 					who += " (" + c.Path + ")"
 				}
 				warn("port %d (%s) is in use by %s", c.Port, c.Service, who)
-				if c.Env != "" && c.Env != "ampls" {
-					fmt.Println(dim(fmt.Sprintf("  run `ampls env:stop %s`, or change the AMPLS port in Settings", c.Env)))
+				if c.Env != "" && c.Env != "apnoro" {
+					fmt.Println(dim(fmt.Sprintf("  run `apnoro env:stop %s`, or change the Apnoro port in Settings", c.Env)))
 				}
 			}
 			return nil
@@ -81,8 +81,8 @@ func addEnvCommands(root *cobra.Command) {
 	var force bool
 	stop := &cobra.Command{
 		Use:       "env:stop <xampp|herd|laragon|wamp>",
-		Short:     "Stop another stack's servers so AMPLS can use the ports",
-		Long:      "Stop the web and database servers of another local stack. Only processes\nrunning from that stack's own folders are stopped; nothing is uninstalled.\n\nExample:\n  ampls env:stop xampp",
+		Short:     "Stop another stack's servers so Apnoro can use the ports",
+		Long:      "Stop the web and database servers of another local stack. Only processes\nrunning from that stack's own folders are stopped; nothing is uninstalled.\n\nExample:\n  apnoro env:stop xampp",
 		GroupID:   "env",
 		Args:      cobra.ExactArgs(1),
 		ValidArgs: []string{api.EnvXAMPP, api.EnvHerd, api.EnvLaragon, api.EnvWAMP},
@@ -113,13 +113,13 @@ MySQL/MariaDB server. Project folders are served in place (never copied), and
 the other stack is not changed.
 
 Without --sites or --park every site without a conflict is linked.
-The MySQL password is read from $AMPLS_IMPORT_PASSWORD, never from a flag.
+The MySQL password is read from $APNORO_IMPORT_PASSWORD, never from a flag.
 
 Examples:
-  ampls import herd --dry-run
-  ampls import herd --install-php --secure
-  ampls import xampp --park --all-db
-  ampls import mysql --port 3307 --user root --db shop,blog`,
+  apnoro import herd --dry-run
+  apnoro import herd --install-php --secure
+  apnoro import xampp --park --all-db
+  apnoro import mysql --port 3307 --user root --db shop,blog`,
 		GroupID:   "env",
 		Args:      cobra.ExactArgs(1),
 		ValidArgs: []string{api.EnvXAMPP, api.EnvHerd, api.EnvLaragon, api.EnvWAMP, api.EnvMySQL},
@@ -127,7 +127,7 @@ Examples:
 			kind := strings.ToLower(args[0])
 			var srcp *api.MySQLSource
 			if kind == api.EnvMySQL || cmd.Flags().Changed("port") || cmd.Flags().Changed("user") || cmd.Flags().Changed("host") {
-				src.Password = os.Getenv("AMPLS_IMPORT_PASSWORD")
+				src.Password = os.Getenv("APNORO_IMPORT_PASSWORD")
 				srcp = &src
 			}
 			b := backend()
@@ -192,7 +192,7 @@ Examples:
 	f.BoolVar(&allDB, "all-db", false, "copy every database")
 	f.BoolVar(&installPHP, "install-php", false, "install PHP versions sites are pinned to and keep the pins")
 	f.BoolVar(&secure, "secure", false, "serve sites over HTTPS that were secured in the source")
-	f.BoolVar(&overwrite, "overwrite", false, "replace AMPLS databases with the same name")
+	f.BoolVar(&overwrite, "overwrite", false, "replace Apnoro databases with the same name")
 	f.StringVar(&src.Host, "host", "127.0.0.1", "source MySQL host")
 	f.IntVar(&src.Port, "port", 3306, "source MySQL port")
 	f.StringVar(&src.User, "user", "root", "source MySQL user")
@@ -224,12 +224,12 @@ func printPlan(p api.ImportPlan) {
 	for _, d := range p.Databases {
 		extra := ""
 		if d.Exists {
-			extra = yellow(" (exists in AMPLS)")
+			extra = yellow(" (exists in Apnoro)")
 		}
 		fmt.Printf("  database: %s %s%s\n", d.Name, dim(humanBytes(d.SizeBytes)), extra)
 	}
 	if len(p.MissingPHP) > 0 {
-		fmt.Println(dim("  PHP not installed in AMPLS: " + strings.Join(p.MissingPHP, ", ") + " (use --install-php)"))
+		fmt.Println(dim("  PHP not installed in Apnoro: " + strings.Join(p.MissingPHP, ", ") + " (use --install-php)"))
 	}
 	for _, n := range p.Notes {
 		fmt.Println(dim("  " + n))

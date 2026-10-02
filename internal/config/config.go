@@ -1,4 +1,4 @@
-// Package config persists AMPLS user configuration in <Home>/config.json.
+// Package config persists Apnoro user configuration in <Home>/config.json.
 package config
 
 import (
@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"ampls/internal/paths"
+	"apnoro/internal/paths"
 )
 
 type Ports struct {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"ampls/internal/paths"
+	"apnoro/internal/paths"
 )
 
 func TestClientDefaultsEscaping(t *testing.T) {

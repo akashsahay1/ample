@@ -8,12 +8,12 @@ import (
 	"strings"
 	"testing"
 
-	"ampls/internal/api"
-	"ampls/internal/paths"
+	"apnoro/internal/api"
+	"apnoro/internal/paths"
 )
 
 func TestMain(m *testing.M) {
-	paths.SetHome(filepath.Join(os.TempDir(), "ampls-external-test-home"))
+	paths.SetHome(filepath.Join(os.TempDir(), "apnoro-external-test-home"))
 	os.Exit(m.Run())
 }
 
@@ -69,7 +69,7 @@ func TestUnder(t *testing.T) {
 		{`c:\XAMPP\mysql\bin\mysqld.exe`, `C:\xampp\`, true},
 		{`C:\xampp2\apache\bin\httpd.exe`, `C:\xampp`, false},
 		{`C:\xampp`, `C:\xampp`, true},
-		{`D:\AMPLS\apache\bin\httpd.exe`, `C:\xampp`, false},
+		{`D:\Apnoro\apache\bin\httpd.exe`, `C:\xampp`, false},
 		{``, `C:\xampp`, false},
 	}
 	for _, c := range cases {
@@ -93,7 +93,7 @@ func TestClassifyPath(t *testing.T) {
 		{`C:\wamp64\bin\mysql\mysql8.3.0\bin\mysqld.exe`, api.EnvWAMP},
 		{`C:\Windows\System32\svchost.exe`, ""},
 		{`C:\tools\xampp.exe`, ""}, // file name, not a directory segment
-		{filepath.Join(paths.Home(), "apache", "bin", "httpd.exe"), EnvAMPLS},
+		{filepath.Join(paths.Home(), "apache", "bin", "httpd.exe"), EnvApnoro},
 	}
 	for _, c := range cases {
 		if got := classifyPath(c.exe, roots); got != c.want {
@@ -113,7 +113,7 @@ func TestPortOwnerIn(t *testing.T) {
 		t.Errorf("443: %+v %v", c, ok)
 	}
 	c, ok = portOwnerIn(3306, procs, nil)
-	if !ok || c.Env != EnvAMPLS {
+	if !ok || c.Env != EnvApnoro {
 		t.Errorf("3306: %+v %v", c, ok)
 	}
 	c, ok = portOwnerIn(8080, procs, nil)
@@ -126,7 +126,7 @@ func TestEnvProcessesAndIsServer(t *testing.T) {
 	procs := []Proc{
 		{PID: 1, Name: "xampp-control.exe", Exe: `C:\xampp\xampp-control.exe`},
 		{PID: 2, Name: "httpd.exe", Exe: `C:\xampp\apache\bin\httpd.exe`},
-		{PID: 3, Name: "httpd.exe", Exe: `C:\AMPLS\apache\bin\httpd.exe`},
+		{PID: 3, Name: "httpd.exe", Exe: `C:\Apnoro\apache\bin\httpd.exe`},
 		{PID: 4, Name: "mysqld.exe"}, // exe unknown: never matched
 	}
 	got := EnvProcesses(procs, []string{`C:\xampp`})

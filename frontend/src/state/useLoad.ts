@@ -14,7 +14,7 @@ export function useLoad<T>(fn: () => Promise<T>, deps: unknown[] = []) {
   const reload = useCallback(async () => {
     if (!hasBackend()) {
       setLoading(false)
-      setError('Backend not connected (run inside AMPLS / wails dev).')
+      setError('Backend not connected (run inside Apnoro / wails dev).')
       return
     }
     try {

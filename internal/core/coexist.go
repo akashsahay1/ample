@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"strings"
 
-	"ampls/internal/api"
-	"ampls/internal/certs"
-	"ampls/internal/config"
-	"ampls/internal/external"
-	"ampls/internal/importer"
-	"ampls/internal/mysql"
-	"ampls/internal/php"
-	"ampls/internal/services"
+	"apnoro/internal/api"
+	"apnoro/internal/certs"
+	"apnoro/internal/config"
+	"apnoro/internal/external"
+	"apnoro/internal/importer"
+	"apnoro/internal/mysql"
+	"apnoro/internal/php"
+	"apnoro/internal/services"
 )
 
 var _ api.Coexistence = (*Core)(nil)
@@ -128,9 +128,9 @@ func (c *Core) runImport(req api.ImportRequest, report func(api.Progress)) ([]st
 		return nil, err
 	}
 	if len(req.Databases) > 0 {
-		report(api.Progress{Message: "Starting AMPLS MySQL", Percent: -1})
+		report(api.Progress{Message: "Starting Apnoro MySQL", Percent: -1})
 		if err := c.StartService(api.ServiceMySQL); err != nil {
-			return nil, fmt.Errorf("AMPLS MySQL must be running to import databases: %w", err)
+			return nil, fmt.Errorf("Apnoro MySQL must be running to import databases: %w", err)
 		}
 	}
 
@@ -203,7 +203,7 @@ func (c *Core) runImport(req api.ImportRequest, report func(api.Progress)) ([]st
 		return notes, errors.Join(runErr, err)
 	}
 	if len(res.Secure) > 0 && !certs.IsCATrusted() {
-		notes = append(notes, "run `ampls trust` (or Settings › Trust HTTPS certificate) so browsers accept the secured sites")
+		notes = append(notes, "run `apnoro trust` (or Settings › Trust HTTPS certificate) so browsers accept the secured sites")
 	}
 	return notes, runErr
 }

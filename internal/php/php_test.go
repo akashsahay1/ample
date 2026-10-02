@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"ampls/internal/paths"
+	"apnoro/internal/paths"
 )
 
 //go:embed testdata/releases.json
@@ -75,12 +75,12 @@ func TestParseReleases(t *testing.T) {
 func TestEditIni(t *testing.T) {
 	out := EditIni(sampleIni, map[string]string{
 		"memory_limit":  "512M",
-		"extension_dir": `"C:/AMPLS/php/8.5/ext"`,
+		"extension_dir": `"C:/Apnoro/php/8.5/ext"`,
 		"date.timezone": "UTC",
 		"brand.new":     "1",
 	}, map[string]bool{"curl": true, "mbstring": true, "opcache": true, "bz2": false})
 	vals, exts := ParseIni(out)
-	if vals["memory_limit"] != "512M" || vals["extension_dir"] != "C:/AMPLS/php/8.5/ext" || vals["date.timezone"] != "UTC" || vals["brand.new"] != "1" {
+	if vals["memory_limit"] != "512M" || vals["extension_dir"] != "C:/Apnoro/php/8.5/ext" || vals["date.timezone"] != "UTC" || vals["brand.new"] != "1" {
 		t.Fatalf("values: %v", vals)
 	}
 	if !exts["curl"] || !exts["mbstring"] || !exts["opcache"] || exts["bz2"] || exts["gd"] {

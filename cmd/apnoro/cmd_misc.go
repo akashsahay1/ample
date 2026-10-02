@@ -10,10 +10,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"ampls/internal/certs"
-	"ampls/internal/core"
-	"ampls/internal/hosts"
-	"ampls/internal/paths"
+	"apnoro/internal/certs"
+	"apnoro/internal/core"
+	"apnoro/internal/hosts"
+	"apnoro/internal/paths"
 )
 
 func addMiscCommands(root *cobra.Command) {
@@ -21,12 +21,12 @@ func addMiscCommands(root *cobra.Command) {
 	logs := &cobra.Command{
 		Use:   "logs [name]",
 		Short: "Show a log file (lists log names when none given)",
-		Long: `Print the last lines of an AMPLS log. Without a name, list the available logs.
+		Long: `Print the last lines of an Apnoro log. Without a name, list the available logs.
 
 Examples:
-  ampls logs
-  ampls logs apache-error
-  ampls logs php-8.3 -n 50`,
+  apnoro logs
+  apnoro logs apache-error
+  apnoro logs php-8.3 -n 50`,
 		GroupID: "misc",
 		Args:    cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -35,7 +35,7 @@ Examples:
 				for _, n := range backend().LogNames() {
 					fmt.Println("  " + n)
 				}
-				fmt.Println(dim("\nShow one with `ampls logs <name>`. Files are in " + paths.LogsDir()))
+				fmt.Println(dim("\nShow one with `apnoro logs <name>`. Files are in " + paths.LogsDir()))
 				return nil
 			}
 			out, err := backend().ReadLog(args[0], lines)
@@ -59,13 +59,13 @@ Examples:
 	setup := &cobra.Command{
 		Use:   "setup",
 		Short: "Prepare the data directory (run by the installer)",
-		Long: `Prepare a freshly installed or upgraded AMPLS data directory: PHP ini files,
+		Long: `Prepare a freshly installed or upgraded Apnoro data directory: PHP ini files,
 MySQL data directory, local certificate authority, Apache config and hosts
 entries. Safe to run repeatedly. The installer runs it elevated.
 
 Examples:
-  ampls setup
-  ampls setup --home D:\AMPLS --park-default --trust-ca-machine`,
+  apnoro setup
+  apnoro setup --home D:\Apnoro --park-default --trust-ca-machine`,
 		GroupID: "misc",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -81,7 +81,7 @@ Examples:
 					fmt.Fprintf(logf, "%s %s\n", time.Now().Format("2006-01-02 15:04:05"), s)
 				}
 			}
-			log(fmt.Sprintf("ampls %s setup (home %s)", version, paths.Home()))
+			log(fmt.Sprintf("apnoro %s setup (home %s)", version, paths.Home()))
 			if mysqlPwFile != "" {
 				// One-time file written by the installer; read and delete it so the
 				// password never sits on a command line or stays on disk.
@@ -104,16 +104,16 @@ Examples:
 			return err
 		},
 	}
-	setup.Flags().BoolVar(&setupOpts.ParkDefault, "park-default", false, "create and park ~/AMPLS/Sites")
-	setup.Flags().BoolVar(&setupOpts.TrustCAMachine, "trust-ca-machine", false, "trust the AMPLS CA machine-wide (requires admin)")
+	setup.Flags().BoolVar(&setupOpts.ParkDefault, "park-default", false, "create and park ~/Apnoro/Sites")
+	setup.Flags().BoolVar(&setupOpts.TrustCAMachine, "trust-ca-machine", false, "trust the Apnoro CA machine-wide (requires admin)")
 	setup.Flags().StringVar(&mysqlPwFile, "mysql-password-file", "", "file holding the root password for a fresh MySQL install (deleted after reading)")
 
 	var trustMachine bool
 	trust := &cobra.Command{
 		Use:   "trust",
-		Short: "Trust the AMPLS certificate authority for HTTPS sites",
-		Long: "Create the local AMPLS certificate authority if needed and add it to the\ncurrent user's trusted root store, so browsers accept secured sites.\n\n" +
-			"--machine adds the existing CA to the machine store instead (requires admin;\nthe installer uses it). It never creates a CA, so the key stays owned by the user.\n\nExamples:\n  ampls trust\n  ampls trust --machine",
+		Short: "Trust the Apnoro certificate authority for HTTPS sites",
+		Long: "Create the local Apnoro certificate authority if needed and add it to the\ncurrent user's trusted root store, so browsers accept secured sites.\n\n" +
+			"--machine adds the existing CA to the machine store instead (requires admin;\nthe installer uses it). It never creates a CA, so the key stays owned by the user.\n\nExamples:\n  apnoro trust\n  apnoro trust --machine",
 		GroupID: "misc",
 		Args:    cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -124,7 +124,7 @@ Examples:
 			} else if err := backend().TrustCA(); err != nil {
 				return err
 			}
-			ok("AMPLS certificate authority trusted")
+			ok("Apnoro certificate authority trusted")
 			return nil
 		},
 	}
@@ -132,15 +132,15 @@ Examples:
 
 	hostsCmd := &cobra.Command{
 		Use:     "hosts",
-		Short:   "Manage the AMPLS block in the system hosts file",
-		Long:    "Manage the AMPLS-managed block in " + hosts.HostsPath() + ".\nAMPLS normally updates it automatically.",
+		Short:   "Manage the Apnoro block in the system hosts file",
+		Long:    "Manage the Apnoro-managed block in " + hosts.HostsPath() + ".\nApnoro normally updates it automatically.",
 		GroupID: "misc",
 	}
 	hostsCmd.AddCommand(
 		&cobra.Command{
 			Use:   "apply",
 			Short: "Apply the pending hosts request (requires admin)",
-			Long:  "Apply the domains requested in run/hosts.json to the hosts file. AMPLS runs\nthis elevated automatically when the helper service is unavailable.\n\nExample:\n  ampls hosts apply",
+			Long:  "Apply the domains requested in run/hosts.json to the hosts file. Apnoro runs\nthis elevated automatically when the helper service is unavailable.\n\nExample:\n  apnoro hosts apply",
 			Args:  cobra.NoArgs,
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if err := hosts.ApplyPending(); err != nil {
@@ -152,21 +152,21 @@ Examples:
 		},
 		&cobra.Command{
 			Use:   "clear",
-			Short: "Remove all AMPLS entries from the hosts file (requires admin)",
-			Long:  "Remove the AMPLS block from the hosts file.\n\nExample:\n  ampls hosts clear",
+			Short: "Remove all Apnoro entries from the hosts file (requires admin)",
+			Long:  "Remove the Apnoro block from the hosts file.\n\nExample:\n  apnoro hosts clear",
 			Args:  cobra.NoArgs,
 			RunE: func(cmd *cobra.Command, args []string) error {
 				if err := hosts.Apply(nil); err != nil {
 					return err
 				}
-				ok("AMPLS entries removed from the hosts file")
+				ok("Apnoro entries removed from the hosts file")
 				return nil
 			},
 		},
 		&cobra.Command{
 			Use:   "list",
-			Short: "List the domains in the AMPLS hosts block",
-			Long:  "List the domains currently in the AMPLS-managed hosts block.\n\nExample:\n  ampls hosts list",
+			Short: "List the domains in the Apnoro hosts block",
+			Long:  "List the domains currently in the Apnoro-managed hosts block.\n\nExample:\n  apnoro hosts list",
 			Args:  cobra.NoArgs,
 			RunE: func(cmd *cobra.Command, args []string) error {
 				ds, err := hosts.Current()
@@ -174,7 +174,7 @@ Examples:
 					return err
 				}
 				if len(ds) == 0 {
-					fmt.Println("No AMPLS entries in " + hosts.HostsPath())
+					fmt.Println("No Apnoro entries in " + hosts.HostsPath())
 					return nil
 				}
 				for _, d := range ds {
@@ -192,15 +192,15 @@ Examples:
 		hostsCmd,
 		&cobra.Command{
 			Use:     "version",
-			Short:   "Print the AMPLS version",
-			Long:    "Print the AMPLS version and data directory.\n\nExample:\n  ampls version",
+			Short:   "Print the Apnoro version",
+			Long:    "Print the Apnoro version and data directory.\n\nExample:\n  apnoro version",
 			GroupID: "misc",
 			Args:    cobra.NoArgs,
 			Run: func(cmd *cobra.Command, args []string) {
 				if build != "" {
-					fmt.Printf("ampls %s build %s (%s/%s)\n", version, build, runtime.GOOS, runtime.GOARCH)
+					fmt.Printf("apnoro %s build %s (%s/%s)\n", version, build, runtime.GOOS, runtime.GOARCH)
 				} else {
-					fmt.Printf("ampls %s (%s/%s)\n", version, runtime.GOOS, runtime.GOARCH)
+					fmt.Printf("apnoro %s (%s/%s)\n", version, runtime.GOOS, runtime.GOARCH)
 				}
 				fmt.Println("home: " + paths.Home())
 			},

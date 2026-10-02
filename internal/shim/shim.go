@@ -11,22 +11,26 @@ import (
 	"strconv"
 	"strings"
 
-	"ampls/internal/config"
-	"ampls/internal/paths"
-	"ampls/internal/sites"
+	"apnoro/internal/config"
+	"apnoro/internal/paths"
+	"apnoro/internal/sites"
 )
 
 // VersionFile pins a PHP minor version for a directory tree (content e.g. "8.3").
-const VersionFile = ".ampls-php"
+const VersionFile = ".apnoro-php"
+
+// legacyVersionFile is the same file under the product's former name (AMPLS);
+// it is still honoured so existing checkouts keep their pinned version.
+const legacyVersionFile = ".ampls-php"
 
 // ErrNoPHP is returned when no PHP version is installed.
-var ErrNoPHP = errors.New("no PHP version is installed in AMPLS (install one with `ampls php:install 8.4` or from the AMPLS app)")
+var ErrNoPHP = errors.New("no PHP version is installed in Apnoro (install one with `apnoro php:install 8.4` or from the Apnoro app)")
 
 var minorRe = regexp.MustCompile(`^\d+\.\d+$`)
 
 // ResolveVersion picks the PHP minor version for cwd:
-//  1. nearest .ampls-php file walking up to the filesystem root
-//  2. the isolated PHP of the AMPLS site containing cwd
+//  1. nearest .apnoro-php file walking up to the filesystem root
+//  2. the isolated PHP of the Apnoro site containing cwd
 //  3. cfg.DefaultPHP (if installed)
 //  4. the newest installed version
 //
@@ -66,11 +70,13 @@ func ResolveVersion(cwd string) (minor string, source string, err error) {
 
 func findVersionFile(dir string) (version, file string) {
 	for {
-		p := filepath.Join(dir, VersionFile)
-		if b, err := readHead(p, 64); err == nil {
-			line := strings.TrimSpace(strings.SplitN(strings.TrimPrefix(string(b), "\xef\xbb\xbf"), "\n", 2)[0])
-			if minorRe.MatchString(line) {
-				return line, p
+		for _, name := range []string{VersionFile, legacyVersionFile} {
+			p := filepath.Join(dir, name)
+			if b, err := readHead(p, 64); err == nil {
+				line := strings.TrimSpace(strings.SplitN(strings.TrimPrefix(string(b), "\xef\xbb\xbf"), "\n", 2)[0])
+				if minorRe.MatchString(line) {
+					return line, p
+				}
 			}
 		}
 		parent := filepath.Dir(dir)
@@ -81,7 +87,7 @@ func findVersionFile(dir string) (version, file string) {
 	}
 }
 
-// readHead reads at most n bytes of a regular file (a .ampls-php from an
+// readHead reads at most n bytes of a regular file (a .apnoro-php from an
 // untrusted checkout could be huge or a device/pipe).
 func readHead(p string, n int64) ([]byte, error) {
 	st, err := os.Stat(p)

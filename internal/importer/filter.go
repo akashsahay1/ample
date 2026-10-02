@@ -10,7 +10,7 @@ import (
 // FilterDump copies a mysqldump stream from r to w, rewriting the constructs
 // that MySQL 8.4 rejects. mariadb enables the MariaDB-specific rewrites; the
 // DEFINER rewrite always applies so views/routines/triggers do not reference
-// accounts that do not exist in AMPLS.
+// accounts that do not exist in Apnoro.
 //
 // Data lines (INSERT ...) are passed through untouched so values are never altered.
 func FilterDump(r io.Reader, w io.Writer, mariadb bool) error {

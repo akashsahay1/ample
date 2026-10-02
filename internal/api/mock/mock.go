@@ -1,5 +1,5 @@
 // Package mock provides an in-memory api.Backend used for GUI development
-// (AMPLS_MOCK=1). State mutations persist for the lifetime of the process.
+// (APNORO_MOCK=1). State mutations persist for the lifetime of the process.
 package mock
 
 import (
@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"ampls/internal/api"
+	"apnoro/internal/api"
 )
 
 type service struct {
@@ -54,9 +54,9 @@ type Backend struct {
 
 var _ api.Backend = (*Backend)(nil)
 
-const home = `C:\AMPLS`
+const home = `C:\Apnoro`
 
-var sitesDir = `C:\Users\dev\AMPLS\Sites`
+var sitesDir = `C:\Users\dev\Apnoro\Sites`
 
 var validNameRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`)
 

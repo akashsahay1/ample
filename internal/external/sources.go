@@ -10,14 +10,14 @@ import (
 	"strconv"
 	"strings"
 
-	"ampls/internal/api"
-	"ampls/internal/php"
-	"ampls/internal/sites"
+	"apnoro/internal/api"
+	"apnoro/internal/php"
+	"apnoro/internal/sites"
 )
 
 // ---------- XAMPP ----------
 
-// XAMPPInfo is what AMPLS reads from an XAMPP installation.
+// XAMPPInfo is what Apnoro reads from an XAMPP installation.
 type XAMPPInfo struct {
 	Root           string
 	Version        string // "8.2.12"
@@ -197,7 +197,7 @@ var stackFolders = map[string]bool{
 	"cgi-bin": true, ".well-known": true,
 }
 
-// SourceSites lists the sites an environment serves, without AMPLS-side
+// SourceSites lists the sites an environment serves, without Apnoro-side
 // conflict checks: parked lists the directories that could be parked instead
 // of linking their folders one by one.
 func SourceSites(kind, root string) (list []api.ImportSite, parked []string, notes []string, err error) {
@@ -213,7 +213,7 @@ func SourceSites(kind, root string) (list []api.ImportSite, parked []string, not
 			parked = []string{x.Htdocs}
 		}
 		if x.PHPVersion != "" {
-			notes = append(notes, fmt.Sprintf("XAMPP uses PHP %s; imported sites will use the AMPLS default PHP unless you pin them.", x.PHPVersion))
+			notes = append(notes, fmt.Sprintf("XAMPP uses PHP %s; imported sites will use the Apnoro default PHP unless you pin them.", x.PHPVersion))
 		}
 	case api.EnvHerd:
 		h, err := ReadHerd(root)
@@ -264,7 +264,7 @@ func SourceSites(kind, root string) (list []api.ImportSite, parked []string, not
 			parked = []string{www}
 		}
 		if len(l.php) > 0 {
-			notes = append(notes, "Laragon PHP versions: "+strings.Join(l.php, ", ")+"; imported sites will use the AMPLS default PHP unless you pin them.")
+			notes = append(notes, "Laragon PHP versions: "+strings.Join(l.php, ", ")+"; imported sites will use the Apnoro default PHP unless you pin them.")
 		}
 	case api.EnvWAMP:
 		w := ReadWAMP(root)
@@ -283,7 +283,7 @@ func SourceSites(kind, root string) (list []api.ImportSite, parked []string, not
 			parked = []string{www}
 		}
 		if len(w.php) > 0 {
-			notes = append(notes, "WampServer PHP versions: "+strings.Join(w.php, ", ")+"; imported sites will use the AMPLS default PHP unless you pin them.")
+			notes = append(notes, "WampServer PHP versions: "+strings.Join(w.php, ", ")+"; imported sites will use the Apnoro default PHP unless you pin them.")
 		}
 	case api.EnvMySQL:
 		return nil, nil, nil, nil

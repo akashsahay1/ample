@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"ampls/internal/php"
+	"apnoro/internal/php"
 )
 
 // Laravel Herd for Windows keeps its state under %USERPROFILE%\.config\herd:
@@ -37,7 +37,7 @@ type HerdLink struct {
 	Path string // link target
 }
 
-// HerdInfo is what AMPLS reads from Herd's configuration.
+// HerdInfo is what Apnoro reads from Herd's configuration.
 type HerdInfo struct {
 	ConfigDir string            // %USERPROFILE%\.config\herd
 	TLD       string            // "test"

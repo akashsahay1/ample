@@ -1,4 +1,4 @@
-// Package certs maintains the AMPLS local certificate authority and the
+// Package certs maintains the Apnoro local certificate authority and the
 // per-site TLS certificates it signs (pure Go crypto/x509).
 package certs
 
@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"ampls/internal/paths"
+	"apnoro/internal/paths"
 )
 
 const (
@@ -34,7 +34,7 @@ const (
 var mu sync.Mutex
 
 // CAName is the CA certificate's exact Common Name.
-const CAName = "AMPLS Local CA"
+const CAName = "Apnoro Local CA"
 
 // PermittedDomains are the DNS name constraints of the CA: a constraint of
 // "test" matches test and every name below it (RFC 5280 4.2.1.10).
@@ -234,8 +234,9 @@ func EnsureCA() error {
 
 func ensureCA() error {
 	// An existing CA without the name/EKU constraints (created by an older
-	// build) is replaced; it then has to be trusted again.
-	if c, _, err := LoadCA(); err == nil && c.IsCA && time.Until(c.NotAfter) > renewBefore && constrained(c) {
+	// build), or still named after the former product (AMPLS Local CA), is
+	// replaced; it then has to be trusted again and site certs are re-issued.
+	if c, _, err := LoadCA(); err == nil && c.IsCA && time.Until(c.NotAfter) > renewBefore && constrained(c) && c.Subject.CommonName == CAName {
 		return nil
 	}
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
@@ -250,10 +251,10 @@ func ensureCA() error {
 	tpl := &x509.Certificate{
 		SerialNumber: sn,
 		// The CN is exactly CAName so the uninstaller can remove it with
-		// `certutil -delstore Root "AMPLS Local CA"`; the user goes in the OU.
+		// `certutil -delstore Root "Apnoro Local CA"`; the user goes in the OU.
 		Subject: pkix.Name{
 			CommonName:         CAName,
-			Organization:       []string{"AMPLS local development CA"},
+			Organization:       []string{"Apnoro local development CA"},
 			OrganizationalUnit: []string{username()},
 		},
 		NotBefore:             now.Add(-time.Hour),
@@ -328,7 +329,7 @@ func EnsureSiteCert(domain string) (certFile, keyFile string, err error) {
 	}
 	tpl := &x509.Certificate{
 		SerialNumber: sn,
-		Subject:      pkix.Name{CommonName: domain, Organization: []string{"AMPLS development certificate"}},
+		Subject:      pkix.Name{CommonName: domain, Organization: []string{"Apnoro development certificate"}},
 		DNSNames:     []string{domain, "*." + domain},
 		NotBefore:    now.Add(-time.Hour),
 		NotAfter:     notAfter,

@@ -33,7 +33,7 @@ $name = '{{DOMAIN}}';
 <body>
   <div class="card">
     <h1>Hello from <?= htmlspecialchars($name) ?></h1>
-    <p>Running PHP <strong><?= PHP_VERSION ?></strong> on AMPLS.</p>
+    <p>Running PHP <strong><?= PHP_VERSION ?></strong> on Apnoro.</p>
     <p>Edit <code><?= htmlspecialchars(__FILE__) ?></code> to get started.</p>
     <p><a href="?phpinfo=1">View phpinfo()</a></p>
   </div>
@@ -43,11 +43,11 @@ $name = '{{DOMAIN}}';
 
 const blankReadme = `# {{NAME}}
 
-A blank PHP project served by AMPLS at {{URL}}
+A blank PHP project served by Apnoro at {{URL}}
 
 - ` + "`index.php`" + ` is the entry point.
-- Pin a PHP version for the command line by writing e.g. ` + "`8.3`" + ` to a ` + "`.ampls-php`" + ` file,
-  or isolate the site's PHP version from the AMPLS app / ` + "`ampls isolate`" + `.
+- Pin a PHP version for the command line by writing e.g. ` + "`8.3`" + ` to a ` + "`.apnoro-php`" + ` file,
+  or isolate the site's PHP version from the Apnoro app / ` + "`apnoro isolate`" + `.
 `
 
 func createBlank(r Request, target string) error {

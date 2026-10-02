@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"ampls/internal/download"
-	"ampls/internal/paths"
-	"ampls/internal/services"
+	"apnoro/internal/download"
+	"apnoro/internal/paths"
+	"apnoro/internal/services"
 )
 
 // VHost is one generated site.
@@ -39,7 +39,7 @@ func MainConfPath() string { return filepath.Join(paths.ConfDir(), "httpd.conf")
 // HttpdPath is the httpd executable.
 func HttpdPath() string { return filepath.Join(paths.ApacheDir(), "bin", paths.Exe("httpd")) }
 
-// StartArgs runs httpd in the foreground with the AMPLS config.
+// StartArgs runs httpd in the foreground with the Apnoro config.
 func StartArgs() []string {
 	return []string{"-f", slash(MainConfPath()), "-d", slash(paths.ApacheDir())}
 }

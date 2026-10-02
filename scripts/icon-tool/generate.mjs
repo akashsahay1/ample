@@ -1,9 +1,9 @@
-// Regenerates every AMPLS icon asset from the launcher artwork assets/icon/ampls_launcher.png.
+// Regenerates every Apnoro icon asset from the launcher artwork assets/icon/apnoro_launcher.png.
 //   cd scripts/icon-tool && npm install && node generate.mjs
 //
 // 1. Clean: drop the faint glow (alpha < 8) that pads the artwork, make the
 //    body fully opaque (it ships at alpha 253), crop tight to the artwork.
-//    The result is saved as assets/icon/ampls_launcher_clean.png (master).
+//    The result is saved as assets/icon/apnoro_launcher_clean.png (master).
 // 2. Outputs (assets/icons/): app-<size>.png, app.ico, app.icns, tray-*.ico,
 //    installer-wizard-*.bmp; copies app-1024.png -> build/appicon.png and
 //    app.ico -> build/windows/icon.ico (Wails), and the GUI/site logos.
@@ -24,7 +24,7 @@ fs.mkdirSync(out, { recursive: true });
 const GLOW_CUTOFF = 8; // alpha below this is the soft halo: removed
 const SOLID_FROM = 250; // alpha at/above this becomes fully opaque
 
-const src = PNG.sync.read(fs.readFileSync(path.join(srcDir, 'ampls_launcher.png')));
+const src = PNG.sync.read(fs.readFileSync(path.join(srcDir, 'apnoro_launcher.png')));
 let x0 = src.width, y0 = src.height, x1 = -1, y1 = -1;
 for (let y = 0; y < src.height; y++) {
   for (let x = 0; x < src.width; x++) {
@@ -68,7 +68,7 @@ const toPng = ({ rgba, width, height }) =>
 
 // Master: tight, square, 1024 with the standard margin.
 const master = await iconRGBA(1024);
-fs.writeFileSync(path.join(srcDir, 'ampls_launcher_clean.png'), await toPng(master));
+fs.writeFileSync(path.join(srcDir, 'apnoro_launcher_clean.png'), await toPng(master));
 
 // ---------- ICO (DIB entries < 256 for max compatibility, PNG entry for 256)
 function dibEntry({ rgba, width, height }) {
@@ -197,7 +197,7 @@ async function overlay(base, iconSize, left, top) {
 }
 const largePanel = (w, h) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 164 314" width="${w}" height="${h}" preserveAspectRatio="none">
   <rect width="164" height="314" fill="#16181D"/>
-  <text x="82" y="206" text-anchor="middle" font-family="Segoe UI" font-weight="700" font-size="26" letter-spacing="2" fill="#F5F3EF">AMPLS</text>
+  <text x="82" y="206" text-anchor="middle" font-family="Segoe UI" font-weight="700" font-size="26" letter-spacing="2" fill="#F5F3EF">Apnoro</text>
   <text x="82" y="226" text-anchor="middle" font-family="Segoe UI" font-size="9.5" fill="#9A9DA5">Apache · MySQL · PHP</text>
 </svg>`;
 const smallPanel = (w, h) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="#ffffff"/></svg>`;

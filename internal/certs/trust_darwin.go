@@ -31,9 +31,9 @@ func TrustCA(machine bool) error {
 		return fmt.Errorf("certs: trust: %w", err)
 	}
 	if !constrained(c) {
-		return fmt.Errorf("certs: trust: refusing to trust a CA without the AMPLS name constraints")
+		return fmt.Errorf("certs: trust: refusing to trust a CA without the Apnoro name constraints")
 	}
-	tmpDir, err := os.MkdirTemp("", "ampls-ca-")
+	tmpDir, err := os.MkdirTemp("", "apnoro-ca-")
 	if err != nil {
 		return err
 	}

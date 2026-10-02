@@ -15,17 +15,17 @@ import (
 
 	driver "github.com/go-sql-driver/mysql"
 
-	"ampls/internal/api"
-	"ampls/internal/external"
-	"ampls/internal/paths"
-	"ampls/internal/services"
+	"apnoro/internal/api"
+	"apnoro/internal/external"
+	"apnoro/internal/paths"
+	"apnoro/internal/services"
 )
 
 // server is a MySQL/MariaDB server databases are read from (or written to).
 type server struct {
 	Host, User, Password string
 	Port                 int
-	BinDir               string // client tools matching the server ("" = AMPLS's)
+	BinDir               string // client tools matching the server ("" = Apnoro's)
 	Desc                 string // for messages
 	stop                 func() error
 }
@@ -146,8 +146,8 @@ func resolveSource(ctx context.Context, kind string, src *api.MySQLSource, d Dep
 	case src != nil && (src.Port != 0 || kind == api.EnvMySQL):
 		s = fromRequest(src, kind+" MySQL")
 		if c, ok := external.PortOwner(s.Port); ok && c.Path != "" && isLoopback(s.Host) {
-			if c.Env == external.EnvAMPLS {
-				return nil, fmt.Errorf("port %d is AMPLS's own MySQL; enter the other server's port", s.Port)
+			if c.Env == external.EnvApnoro {
+				return nil, fmt.Errorf("port %d is Apnoro's own MySQL; enter the other server's port", s.Port)
 			}
 			s.BinDir = toolDirFor(c.Path)
 		}
@@ -185,9 +185,9 @@ func resolveSource(ctx context.Context, kind string, src *api.MySQLSource, d Dep
 		}
 	}
 	if isLoopback(s.Host) && s.Port == d.MySQLPort {
-		if c, ok := external.PortOwner(s.Port); ok && c.Env == external.EnvAMPLS {
+		if c, ok := external.PortOwner(s.Port); ok && c.Env == external.EnvApnoro {
 			s.close()
-			return nil, fmt.Errorf("port %d is AMPLS's own MySQL", s.Port)
+			return nil, fmt.Errorf("port %d is Apnoro's own MySQL", s.Port)
 		}
 	}
 	return s, nil

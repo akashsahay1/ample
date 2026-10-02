@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"ampls/internal/paths"
+	"apnoro/internal/paths"
 )
 
 func TestMain(m *testing.M) {
-	dir, _ := os.MkdirTemp("", "ampls-svc")
+	dir, _ := os.MkdirTemp("", "apnoro-svc")
 	paths.SetHome(dir)
 	code := m.Run()
 	os.RemoveAll(dir)

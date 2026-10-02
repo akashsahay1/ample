@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"ampls/internal/api"
+	"apnoro/internal/api"
 
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -176,7 +176,7 @@ func (a *App) DetectEnvironments() ([]api.ExternalEnv, error) {
 	return c.DetectEnvironments()
 }
 
-// PortConflicts lists ports AMPLS is configured to use that another program holds.
+// PortConflicts lists ports Apnoro is configured to use that another program holds.
 func (a *App) PortConflicts() ([]api.PortConflict, error) {
 	c, err := a.coexist()
 	if err != nil {

@@ -68,7 +68,7 @@ export default function SettingsScreen() {
 
   return (
     <>
-      <PageHeader title="Settings" subtitle="Ports, parked directories and how AMPLS starts.">
+      <PageHeader title="Settings" subtitle="Ports, parked directories and how Apnoro starts.">
         {dirty && <span className="text-[13px] text-muted">Unsaved changes</span>}
         <Button disabled={!dirty} onClick={() => setDirty(false)}>
           Discard
@@ -134,18 +134,18 @@ export default function SettingsScreen() {
             </div>
           </Section>
 
-          <Section title="Startup" desc="Services run in the background; closing the window keeps AMPLS in the system tray.">
-            <Check label="Start services when AMPLS launches" checked={s.startServicesOnLaunch} onChange={v => upd({startServicesOnLaunch: v})} />
+          <Section title="Startup" desc="Services run in the background; closing the window keeps Apnoro in the system tray.">
+            <Check label="Start services when Apnoro launches" checked={s.startServicesOnLaunch} onChange={v => upd({startServicesOnLaunch: v})} />
             <Check
-              label="Stop services when quitting AMPLS"
+              label="Stop services when quitting Apnoro"
               hint="Otherwise Apache and MySQL keep running after you quit."
               checked={s.stopServicesOnQuit}
               onChange={v => upd({stopServicesOnQuit: v})}
             />
-            <Check label="Launch AMPLS at login" hint="Starts minimised to the tray." checked={s.launchAtLogin} onChange={v => upd({launchAtLogin: v})} />
+            <Check label="Launch Apnoro at login" hint="Starts minimised to the tray." checked={s.launchAtLogin} onChange={v => upd({launchAtLogin: v})} />
           </Section>
 
-          <Section title="HTTPS" desc="AMPLS signs site certificates with a local certificate authority. Trust it once so browsers accept https://*.test.">
+          <Section title="HTTPS" desc="Apnoro signs site certificates with a local certificate authority. Trust it once so browsers accept https://*.test.">
             <div className="flex items-center gap-3">
               {overview?.caTrusted ? <Badge tone="ok">Trusted</Badge> : <Badge tone="warn">Not trusted</Badge>}
               <Button icon={<ShieldCheck size={14} />} disabled={overview?.caTrusted} onClick={() => run(() => backend.TrustCA(), 'Local HTTPS certificate trusted')}>
@@ -158,12 +158,12 @@ export default function SettingsScreen() {
             <div className="flex items-center gap-3">
               <Logo size={40} />
               <div>
-                <div className="font-display text-lg font-bold">AMPLS {version}</div>
-                <div className="text-[13px] text-muted">Apache, MySQL, PHP — Latest Software</div>
+                <div className="font-display text-lg font-bold">Apnoro {version}</div>
+                <div className="text-[13px] text-muted">Apache, PHP and MySQL for Windows</div>
               </div>
             </div>
             <p className="m-0 text-xs leading-relaxed text-muted">
-              AMPLS bundles and downloads third-party software under their own licenses: Apache HTTP Server (Apache License 2.0, Apache Lounge builds), PHP
+              Apnoro bundles and downloads third-party software under their own licenses: Apache HTTP Server (Apache License 2.0, Apache Lounge builds), PHP
               (PHP License v3.01, windows.php.net builds), MySQL Community Server (GPLv2 with FOSS exception), Composer (MIT) and phpMyAdmin (GPLv2).
               Fonts: Bricolage Grotesque, IBM Plex Sans and JetBrains Mono (SIL Open Font License).
             </p>

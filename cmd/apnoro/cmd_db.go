@@ -15,7 +15,7 @@ func addDBCommands(root *cobra.Command) {
 	drop := &cobra.Command{
 		Use:     "db:drop <name>",
 		Short:   "Delete a MySQL database",
-		Long:    "Delete a MySQL database and all its data. Asks for confirmation unless --force.\n\nExamples:\n  ampls db:drop shop\n  ampls db:drop shop --force",
+		Long:    "Delete a MySQL database and all its data. Asks for confirmation unless --force.\n\nExamples:\n  apnoro db:drop shop\n  apnoro db:drop shop --force",
 		GroupID: "db",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -41,7 +41,7 @@ func addDBCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "db:list",
 			Short:   "List MySQL databases",
-			Long:    "List the MySQL databases (system schemas excluded). MySQL must be running.\n\nExample:\n  ampls db:list",
+			Long:    "List the MySQL databases (system schemas excluded). MySQL must be running.\n\nExample:\n  apnoro db:list",
 			GroupID: "db",
 			Args:    cobra.NoArgs,
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -50,7 +50,7 @@ func addDBCommands(root *cobra.Command) {
 					return err
 				}
 				if len(dbs) == 0 {
-					fmt.Println("No databases yet. Create one with `ampls db:create <name>`.")
+					fmt.Println("No databases yet. Create one with `apnoro db:create <name>`.")
 					return nil
 				}
 				w := newTable()
@@ -68,7 +68,7 @@ func addDBCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "db:create <name>",
 			Short:   "Create a MySQL database",
-			Long:    "Create a MySQL database (utf8mb4). MySQL must be running.\n\nExample:\n  ampls db:create shop",
+			Long:    "Create a MySQL database (utf8mb4). MySQL must be running.\n\nExample:\n  apnoro db:create shop",
 			GroupID: "db",
 			Args:    cobra.ExactArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -83,7 +83,7 @@ func addDBCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "db:import <database> <file.sql>",
 			Short:   "Import an SQL file into a database",
-			Long:    "Import an SQL dump into an existing database.\n\nExample:\n  ampls db:import shop backup.sql",
+			Long:    "Import an SQL dump into an existing database.\n\nExample:\n  apnoro db:import shop backup.sql",
 			GroupID: "db",
 			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -105,7 +105,7 @@ func addDBCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "db:export <database> <file.sql>",
 			Short:   "Export a database to an SQL file",
-			Long:    "Dump a database to an SQL file (mysqldump).\n\nExample:\n  ampls db:export shop shop.sql",
+			Long:    "Dump a database to an SQL file (mysqldump).\n\nExample:\n  apnoro db:export shop shop.sql",
 			GroupID: "db",
 			Args:    cobra.ExactArgs(2),
 			RunE: func(cmd *cobra.Command, args []string) error {

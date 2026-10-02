@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"ampls/internal/api"
+	"apnoro/internal/api"
 )
 
 var serviceNames = []string{api.ServiceApache, api.ServiceMySQL}
@@ -67,31 +67,31 @@ func serviceCmd(use, short, long, verb string, one func(string) error, all func(
 func addServiceCommands(root *cobra.Command) {
 	root.AddCommand(
 		serviceCmd("start", "Start Apache and MySQL (or one service)",
-			`Start the AMPLS services in the background. They keep running after
+			`Start the Apnoro services in the background. They keep running after
 the command exits.
 
 Examples:
-  ampls start
-  ampls start mysql`, "started",
+  apnoro start
+  apnoro start mysql`, "started",
 			func(n string) error { return backend().StartService(n) }, func() error { return backend().StartAll() }),
 		serviceCmd("stop", "Stop Apache and MySQL (or one service)",
-			`Stop the AMPLS services.
+			`Stop the Apnoro services.
 
 Examples:
-  ampls stop
-  ampls stop apache`, "stopped",
+  apnoro stop
+  apnoro stop apache`, "stopped",
 			func(n string) error { return backend().StopService(n) }, func() error { return backend().StopAll() }),
 		serviceCmd("restart", "Restart Apache and MySQL (or one service)",
-			`Restart the AMPLS services (e.g. after editing php.ini by hand).
+			`Restart the Apnoro services (e.g. after editing php.ini by hand).
 
 Examples:
-  ampls restart
-  ampls restart apache`, "restarted",
+  apnoro restart
+  apnoro restart apache`, "restarted",
 			func(n string) error { return backend().RestartService(n) }, func() error { return backend().RestartAll() }),
 		&cobra.Command{
 			Use:     "status",
 			Short:   "Show service status, default PHP and data directory",
-			Long:    "Show whether Apache and MySQL are running, their PIDs, versions and ports.\n\nExample:\n  ampls status",
+			Long:    "Show whether Apache and MySQL are running, their PIDs, versions and ports.\n\nExample:\n  apnoro status",
 			GroupID: "services",
 			Args:    cobra.NoArgs,
 			RunE:    runStatus,
@@ -125,7 +125,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	fmt.Println()
 	def := o.DefaultPHP
 	if def == "" {
-		def = "none installed (run `ampls php:install 8.4`)"
+		def = "none installed (run `apnoro php:install 8.4`)"
 	}
 	w = newTable()
 	row(w, "Default PHP:", def)
@@ -135,7 +135,7 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	row(w, "Sites:", strconv.Itoa(o.SiteCount))
 	ca := symOK + " trusted"
 	if !o.CATrusted {
-		ca = symFail + " not trusted (run `ampls trust`)"
+		ca = symFail + " not trusted (run `apnoro trust`)"
 	}
 	row(w, "HTTPS CA:", ca)
 	row(w, "Home:", o.Home)

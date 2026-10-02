@@ -8,14 +8,14 @@ import (
 	"strings"
 	"testing"
 
-	"ampls/internal/api"
-	"ampls/internal/config"
-	"ampls/internal/external"
-	"ampls/internal/paths"
+	"apnoro/internal/api"
+	"apnoro/internal/config"
+	"apnoro/internal/external"
+	"apnoro/internal/paths"
 )
 
 func TestMain(m *testing.M) {
-	paths.SetHome(filepath.Join(os.TempDir(), "ampls-importer-test-home"))
+	paths.SetHome(filepath.Join(os.TempDir(), "apnoro-importer-test-home"))
 	os.Exit(m.Run())
 }
 
@@ -154,7 +154,7 @@ func TestAnnotate(t *testing.T) {
 		{Name: "gone", Path: `C:\c`, Conflict: "folder not found"},
 	}}
 	annotate(&plan, existing, []string{"8.3", "8.4"})
-	wantPrefix := []string{"name blog is taken", "already served by AMPLS as old-shop.test", "\"\" is not a valid", "", "another imported site", "folder not found"}
+	wantPrefix := []string{"name blog is taken", "already served by Apnoro as old-shop.test", "\"\" is not a valid", "", "another imported site", "folder not found"}
 	for i, w := range wantPrefix {
 		c := plan.Sites[i].Conflict
 		if (w == "" && c != "") || (w != "" && !strings.HasPrefix(c, w)) {
@@ -180,7 +180,7 @@ func TestPlanSitesLinkAndPark(t *testing.T) {
 	if !reflect.DeepEqual(res.Secure, []string{"shop"}) {
 		t.Errorf("secure = %v", res.Secure)
 	}
-	if len(res.DocRoots) != 0 { // public/ is what AMPLS detects anyway
+	if len(res.DocRoots) != 0 { // public/ is what Apnoro detects anyway
 		t.Errorf("docroots = %v", res.DocRoots)
 	}
 	if len(res.Notes) != 1 || !strings.Contains(res.Notes[0], `C:\not\in\plan`) && !strings.Contains(res.Notes[0], strings.ToLower(`C:\not\in\plan`)) {

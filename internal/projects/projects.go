@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
-	"ampls/internal/api"
-	"ampls/internal/sites"
+	"apnoro/internal/api"
+	"apnoro/internal/sites"
 )
 
 type Request struct {

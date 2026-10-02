@@ -2,7 +2,7 @@
 // Laragon, WampServer or any MySQL/MariaDB server.
 //
 // Scan builds a preview (api.ImportPlan) without changing anything. Run copies
-// the selected databases into AMPLS MySQL itself and returns the configuration
+// the selected databases into Apnoro MySQL itself and returns the configuration
 // changes (parks, links, PHP pins, secure flags, PHP versions to install) as a
 // Result for the core to apply; it never writes config.json. Project files are
 // never copied: sites are served in place.
@@ -16,13 +16,13 @@ import (
 	"sort"
 	"strings"
 
-	"ampls/internal/api"
-	"ampls/internal/config"
-	"ampls/internal/external"
-	"ampls/internal/sites"
+	"apnoro/internal/api"
+	"apnoro/internal/config"
+	"apnoro/internal/external"
+	"apnoro/internal/sites"
 )
 
-// Deps are the AMPLS-side facts the importer needs, supplied by the core.
+// Deps are the Apnoro-side facts the importer needs, supplied by the core.
 type Deps struct {
 	MySQLPort         int
 	MySQLPassword     string
@@ -39,7 +39,7 @@ type Result struct {
 	PHP        map[string]string // site -> PHP minor to pin
 	Secure     []string          // sites to secure
 	InstallPHP []string          // PHP minors to install before pinning
-	Databases  []string          // databases copied into AMPLS
+	Databases  []string          // databases copied into Apnoro
 	Notes      []string          // skipped items and warnings, for the user
 }
 
@@ -120,7 +120,7 @@ func scanDatabases(kind, root string, src *api.MySQLSource, d Deps) ([]api.Datab
 		case api.EnvXAMPP:
 			dbs := external.DataDirDatabases(filepath.Join(root, "mysql", "data"))
 			if len(dbs) > 0 {
-				return dbs, "XAMPP's MySQL is stopped: AMPLS will start it temporarily on a private port to copy the databases (sizes are on-disk estimates)."
+				return dbs, "XAMPP's MySQL is stopped: Apnoro will start it temporarily on a private port to copy the databases (sizes are on-disk estimates)."
 			}
 			return nil, ""
 		case api.EnvHerd:
@@ -174,7 +174,7 @@ func annotate(plan *api.ImportPlan, existing []api.Site, installedPHP []string) 
 		case s.Name == "" || !sites.ValidName(s.Name):
 			s.Conflict = fmt.Sprintf("%q is not a valid site name", s.Name)
 		case byPath[norm(s.Path)].Name != "":
-			s.Conflict = "already served by AMPLS as " + byPath[norm(s.Path)].Domain
+			s.Conflict = "already served by Apnoro as " + byPath[norm(s.Path)].Domain
 		case byName[s.Name].Name != "":
 			s.Conflict = "name " + s.Name + " is taken by " + byName[s.Name].Path
 		case seen[s.Name]:
@@ -194,7 +194,7 @@ func annotate(plan *api.ImportPlan, existing []api.Site, installedPHP []string) 
 
 func norm(p string) string { return strings.ToLower(filepath.Clean(p)) }
 
-// Run performs an import: copies the requested databases into AMPLS MySQL
+// Run performs an import: copies the requested databases into Apnoro MySQL
 // (which must be running) and returns the config changes for the core.
 // The config part of Result is filled even when err != nil (e.g. one database
 // failed), so the core should apply it and then report the error.
@@ -305,7 +305,7 @@ func planSites(res *Result, plan api.ImportPlan, req api.ImportRequest, installe
 				res.PHP[name] = s.PHP
 				install[s.PHP] = true
 			default:
-				res.Notes = append(res.Notes, fmt.Sprintf("%s used PHP %s, which is not installed in AMPLS; it will use the default PHP.", name, s.PHP))
+				res.Notes = append(res.Notes, fmt.Sprintf("%s used PHP %s, which is not installed in Apnoro; it will use the default PHP.", name, s.PHP))
 			}
 		}
 		if req.KeepSecure && s.Secure {
@@ -326,9 +326,9 @@ func planSites(res *Result, plan api.ImportPlan, req api.ImportRequest, installe
 }
 
 func runDatabases(ctx context.Context, req api.ImportRequest, d Deps, res *Result, progress func(string, float64)) error {
-	dst := &server{Host: "127.0.0.1", Port: d.MySQLPort, User: "root", Password: d.MySQLPassword, Desc: "AMPLS MySQL"}
+	dst := &server{Host: "127.0.0.1", Port: d.MySQLPort, User: "root", Password: d.MySQLPassword, Desc: "Apnoro MySQL"}
 	if _, _, err := dst.version(ctx); err != nil {
-		return fmt.Errorf("import: AMPLS MySQL is not reachable on port %d (start it first): %w", d.MySQLPort, err)
+		return fmt.Errorf("import: Apnoro MySQL is not reachable on port %d (start it first): %w", d.MySQLPort, err)
 	}
 	progress("Connecting to "+req.Kind+" MySQL", -1)
 	src, err := resolveSource(ctx, req.Kind, req.MySQL, d, true)
@@ -379,7 +379,7 @@ func runDatabases(ctx context.Context, req api.ImportRequest, d Deps, res *Resul
 			continue
 		}
 		if existed && !req.Overwrite {
-			res.Notes = append(res.Notes, "Database "+name+" already exists in AMPLS; skipped (choose overwrite to replace it).")
+			res.Notes = append(res.Notes, "Database "+name+" already exists in Apnoro; skipped (choose overwrite to replace it).")
 			continue
 		}
 		est := sizes[name]

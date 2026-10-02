@@ -510,7 +510,7 @@ export default function Import() {
                 {(plan.databases ?? []).some(d => d.exists) && (
                   <label className="flex items-center gap-2 text-[13px] whitespace-nowrap">
                     Overwrite existing
-                    <Toggle on={sel.overwrite} label="Overwrite existing AMPLS databases" onChange={v => update(s => ({...s, overwrite: v}))} />
+                    <Toggle on={sel.overwrite} label="Overwrite existing Apnoro databases" onChange={v => update(s => ({...s, overwrite: v}))} />
                   </label>
                 )}
               </div>
@@ -529,7 +529,7 @@ export default function Import() {
                     {d.exists && <Badge tone="warn">exists</Badge>}
                     <span className="grow" />
                     {blocked && <span className="truncate text-xs text-muted">Turn on Overwrite to replace</span>}
-                    {d.exists && sel.overwrite && sel.dbs.has(d.name) && <span className="truncate text-xs text-eol">Will replace the AMPLS database</span>}
+                    {d.exists && sel.overwrite && sel.dbs.has(d.name) && <span className="truncate text-xs text-eol">Will replace the Apnoro database</span>}
                     <span className="w-20 shrink-0 text-right font-mono text-xs text-muted">{d.sizeBytes ? bytes(d.sizeBytes) : ''}</span>
                   </label>
                 )
@@ -555,7 +555,7 @@ export default function Import() {
           <div className="flex items-center gap-3 border-t border-line-soft bg-subtle px-4 py-3">
             <span className="min-w-0 grow text-[13px] text-muted">
               {shortName(kind)} itself is not changed.
-              {kind === 'herd' && ' Stop Herd before using the same .test names in AMPLS.'}
+              {kind === 'herd' && ' Stop Herd before using the same .test names in Apnoro.'}
               {kind === 'xampp' && ' Project folders stay where they are.'}
             </span>
             <Button onClick={reset}>Cancel</Button>

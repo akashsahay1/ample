@@ -1,5 +1,5 @@
 // Package core implements api.Backend by orchestrating the runtime packages.
-// It is shared by the GUI (AMPLS.exe) and the CLI (ampls.exe).
+// It is shared by the GUI (Apnoro.exe) and the CLI (apnoro.exe).
 package core
 
 import (
@@ -14,20 +14,20 @@ import (
 	"sync/atomic"
 	"time"
 
-	"ampls/internal/apache"
-	"ampls/internal/api"
-	"ampls/internal/certs"
-	"ampls/internal/config"
-	"ampls/internal/external"
-	"ampls/internal/hosts"
-	"ampls/internal/mysql"
-	"ampls/internal/paths"
-	"ampls/internal/php"
-	"ampls/internal/services"
-	"ampls/internal/sites"
+	"apnoro/internal/apache"
+	"apnoro/internal/api"
+	"apnoro/internal/certs"
+	"apnoro/internal/config"
+	"apnoro/internal/external"
+	"apnoro/internal/hosts"
+	"apnoro/internal/mysql"
+	"apnoro/internal/paths"
+	"apnoro/internal/php"
+	"apnoro/internal/services"
+	"apnoro/internal/sites"
 )
 
-// Version is the AMPLS version and Build the build number (git commit count),
+// Version is the Apnoro version and Build the build number (git commit count),
 // both set via -ldflags by the binaries (scripts/build.ps1).
 var (
 	Version = "1.0.0"
@@ -224,7 +224,7 @@ func (c *Core) syncOpts(restart, requestHosts bool) error {
 	if requestHosts {
 		if err := hosts.Request(domains, cfg.TLD); err != nil {
 			// Not fatal: sites still work via http://127.0.0.1 with Host header, and the user can retry.
-			fmt.Fprintln(os.Stderr, "ampls: hosts update failed:", err)
+			fmt.Fprintln(os.Stderr, "apnoro: hosts update failed:", err)
 		}
 	}
 	key := siteKey(ss, cfg)
@@ -341,10 +341,10 @@ func (c *Core) restartApache() error {
 
 func portFree(port int, what string) error {
 	if used, owner := services.PortInUse(port); used {
-		if c, ok := external.PortOwner(port); ok && c.Env != external.EnvAMPLS {
+		if c, ok := external.PortOwner(port); ok && c.Env != external.EnvApnoro {
 			hint := ""
 			if _, stoppable := envTitles[c.Env]; stoppable {
-				hint = fmt.Sprintf(": stop it (ampls env:stop %s) or change the AMPLS port in Settings", c.Env)
+				hint = fmt.Sprintf(": stop it (apnoro env:stop %s) or change the Apnoro port in Settings", c.Env)
 			}
 			return fmt.Errorf("%s port %d is already in use by %s%s", what, port, describeOwner(c), hint)
 		}
@@ -374,7 +374,7 @@ func (c *Core) startService(name string) error {
 	switch name {
 	case api.ServiceApache:
 		if _, err := os.Stat(apache.HttpdPath()); err != nil {
-			return errors.New("Apache is not installed in the AMPLS data directory")
+			return errors.New("Apache is not installed in the Apnoro data directory")
 		}
 		if defaultPHP(cfg) == "" {
 			return errors.New("no PHP version is installed: install one from PHP Versions first")
@@ -407,7 +407,7 @@ func (c *Core) startService(name string) error {
 		return nil
 	case api.ServiceMySQL:
 		if _, err := os.Stat(mysql.MysqldPath()); err != nil {
-			return errors.New("MySQL is not installed in the AMPLS data directory")
+			return errors.New("MySQL is not installed in the Apnoro data directory")
 		}
 		if err := mysql.WriteConfig(cfg.Ports.MySQL); err != nil {
 			return err

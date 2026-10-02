@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  One-command AMPLS build: Go binaries -> Wails GUI -> runtime payload -> Inno Setup installer.
+  One-command Apnoro build: Go binaries -> Wails GUI -> runtime payload -> Inno Setup installer.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\build.ps1 -Version 1.0.0
@@ -51,7 +51,7 @@ if (-not $Build) {
     if (-not $Build) { $Build = '0' }
 }
 $Build = "$Build".Trim()
-Write-Host "AMPLS $Version build $Build" -ForegroundColor Green
+Write-Host "Apnoro $Version build $Build" -ForegroundColor Green
 $LdVars = "-X main.version=$Version -X main.build=$Build"
 
 $Go = Find-Tool 'go' @('C:\Program Files\Go\bin\go.exe')
@@ -62,9 +62,9 @@ New-Item -ItemType Directory -Force $Bin | Out-Null
 # ---------------------------------------------------------------- (a) Go binaries
 Write-Step 'Go binaries'
 $targets = @(
-    @{ Pkg = 'cmd/ampls';        Out = 'ampls.exe' },
+    @{ Pkg = 'cmd/apnoro';        Out = 'apnoro.exe' },
     @{ Pkg = 'cmd/php-shim';     Out = 'php.exe'; Dir = 'shims' },
-    @{ Pkg = 'cmd/ampls-helper'; Out = 'ampls-helper.exe' }
+    @{ Pkg = 'cmd/apnoro-helper'; Out = 'apnoro-helper.exe' }
 )
 Push-Location $Root
 try {
@@ -85,9 +85,9 @@ if (-not $SkipGui) {
     try {
         Invoke-Checked $WailsExe @('build', '-clean', '-platform', 'windows/amd64', '-ldflags', $LdVars)
     } finally { Pop-Location }
-    Copy-Item -Force (Join-Path $Root 'build\bin\AMPLS.exe') (Join-Path $App 'AMPLS.exe')
-} elseif (-not (Test-Path (Join-Path $App 'AMPLS.exe'))) {
-    Write-Warning 'SkipGui: dist\app\AMPLS.exe does not exist yet (installer compile will fail)'
+    Copy-Item -Force (Join-Path $Root 'build\bin\Apnoro.exe') (Join-Path $App 'Apnoro.exe')
+} elseif (-not (Test-Path (Join-Path $App 'Apnoro.exe'))) {
+    Write-Warning 'SkipGui: dist\app\Apnoro.exe does not exist yet (installer compile will fail)'
 }
 
 # ---------------------------------------------------------------- (d) runtime payload
@@ -114,9 +114,9 @@ if (-not $SkipInstaller) {
         (Join-Path $env:LOCALAPPDATA 'Programs\Inno Setup 6\ISCC.exe'))
     $isccArgs = @("/DAppVersion=$Version", "/DAppBuild=$Build")
     if ($Compression) { $isccArgs += "/DCompression=$Compression" }
-    $isccArgs += (Join-Path $Root 'installer\ampls.iss')
+    $isccArgs += (Join-Path $Root 'installer\apnoro.iss')
     Invoke-Checked $Iscc $isccArgs
-    $out = Join-Path $Dist "AMPLS-Setup-$Version.exe"
+    $out = Join-Path $Dist "Apnoro-Setup-$Version.exe"
     Write-Host ("    {0} ({1:N0} MB)" -f $out, ((Get-Item $out).Length / 1MB)) -ForegroundColor Green
 
     # ------------------------------------------------------------ (f) website

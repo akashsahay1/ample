@@ -1,4 +1,4 @@
-// Package api defines the contract between the GUI/CLI and the AMPLS core.
+// Package api defines the contract between the GUI/CLI and the Apnoro core.
 // The GUI binds to an implementation of Backend (internal/core in production,
 // internal/api/mock for frontend development).
 package api
@@ -17,10 +17,10 @@ const (
 )
 
 // ProgressEvent is the Wails event name carrying Progress payloads.
-const ProgressEvent = "ampls:progress"
+const ProgressEvent = "apnoro:progress"
 
 // StatusEvent is emitted (no payload) whenever service/site state changes.
-const StatusEvent = "ampls:status"
+const StatusEvent = "apnoro:status"
 
 type ServiceStatus struct {
 	Name    string `json:"name"`
@@ -195,7 +195,7 @@ type ExternalEnv struct {
 	Notes     []string `json:"notes"`
 }
 
-// PortConflict describes a port AMPLS needs that another program holds.
+// PortConflict describes a port Apnoro needs that another program holds.
 type PortConflict struct {
 	Port    int    `json:"port"`
 	Service string `json:"service"` // api.ServiceApache | api.ServiceMySQL
@@ -206,7 +206,7 @@ type PortConflict struct {
 
 // ImportSite is one site an import would bring over.
 type ImportSite struct {
-	Name     string `json:"name"`   // proposed AMPLS site name (slug)
+	Name     string `json:"name"`   // proposed Apnoro site name (slug)
 	Domain   string `json:"domain"` // original domain, e.g. "blog.test" or "localhost/blog"
 	Path     string `json:"path"`   // project folder (served in place, never copied)
 	DocRoot  string `json:"docRoot"`
@@ -219,7 +219,7 @@ type ImportSite struct {
 type ImportDatabase struct {
 	Name      string `json:"name"`
 	SizeBytes int64  `json:"sizeBytes"`
-	Exists    bool   `json:"exists"` // a database with this name already exists in AMPLS
+	Exists    bool   `json:"exists"` // a database with this name already exists in Apnoro
 }
 
 // ImportPlan is the preview shown before anything is changed.
@@ -229,7 +229,7 @@ type ImportPlan struct {
 	ParkedDirs []string         `json:"parkedDirs"` // folders to park (Herd parked paths, XAMPP htdocs)
 	Sites      []ImportSite     `json:"sites"`
 	Databases  []ImportDatabase `json:"databases"`
-	MissingPHP []string         `json:"missingPhp"` // PHP minors used by sites but not installed in AMPLS
+	MissingPHP []string         `json:"missingPhp"` // PHP minors used by sites but not installed in Apnoro
 	Notes      []string         `json:"notes"`
 }
 
@@ -246,7 +246,7 @@ type ImportRequest struct {
 	ParkDirs   []string     `json:"parkDirs"`   // subset of plan.ParkedDirs
 	Sites      []string     `json:"sites"`      // ImportSite.Path values to link
 	Databases  []string     `json:"databases"`  // names to copy
-	Overwrite  bool         `json:"overwrite"`  // replace existing AMPLS databases of the same name
+	Overwrite  bool         `json:"overwrite"`  // replace existing Apnoro databases of the same name
 	InstallPHP bool         `json:"installPhp"` // install MissingPHP versions and keep per-site pins
 	KeepSecure bool         `json:"keepSecure"` // re-secure sites that were HTTPS in the source
 	MySQL      *MySQLSource `json:"mysql"`      // required for EnvMySQL / Herd Pro; nil otherwise
@@ -259,7 +259,7 @@ const ImportTaskPrefix = "import:"
 // with a type assertion so the mock and core can adopt it independently.
 type Coexistence interface {
 	DetectEnvironments() ([]ExternalEnv, error)
-	PortConflicts() ([]PortConflict, error) // for the ports AMPLS is configured to use
+	PortConflicts() ([]PortConflict, error) // for the ports Apnoro is configured to use
 	StopEnvironment(kind string) error      // stop XAMPP/Herd/... servers (user-initiated only)
 	ScanImport(kind string, src *MySQLSource) (ImportPlan, error)
 	RunImport(req ImportRequest, progress ProgressFunc) error

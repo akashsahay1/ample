@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"ampls/internal/config"
+	"apnoro/internal/config"
 )
 
 func TestSlug(t *testing.T) {

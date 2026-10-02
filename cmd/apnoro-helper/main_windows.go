@@ -1,11 +1,11 @@
 //go:build windows
 
-// Command ampls-helper is the AMPLS hosts-file helper Windows service. It runs
+// Command apnoro-helper is the Apnoro hosts-file helper Windows service. It runs
 // as LocalSystem and applies validated requests from <home>\run\hosts.json.
 //
-//	ampls-helper install --home <dir>   register + start the service (admin)
-//	ampls-helper uninstall              stop + remove the service (admin)
-//	ampls-helper run --home <dir>       service entry point (foreground when interactive)
+//	apnoro-helper install --home <dir>   register + start the service (admin)
+//	apnoro-helper uninstall              stop + remove the service (admin)
+//	apnoro-helper run --home <dir>       service entry point (foreground when interactive)
 package main
 
 import (
@@ -25,17 +25,17 @@ import (
 	"golang.org/x/sys/windows/svc"
 	"golang.org/x/sys/windows/svc/mgr"
 
-	"ampls/internal/hosts"
+	"apnoro/internal/hosts"
 )
 
 const (
-	serviceName = "AMPLSHelper"
-	displayName = "AMPLS Helper"
-	description = "Keeps the AMPLS block of the hosts file in sync with your local .test sites."
+	serviceName = "ApnoroHelper"
+	displayName = "Apnoro Helper"
+	description = "Keeps the Apnoro block of the hosts file in sync with your local .test sites."
 )
 
 func usage() {
-	fmt.Fprintln(os.Stderr, "usage: ampls-helper install --home <dir> | uninstall | run --home <dir>")
+	fmt.Fprintln(os.Stderr, "usage: apnoro-helper install --home <dir> | uninstall | run --home <dir>")
 	os.Exit(2)
 }
 
@@ -45,7 +45,7 @@ func main() {
 	}
 	cmd := os.Args[1]
 	fs := flag.NewFlagSet(cmd, flag.ExitOnError)
-	home := fs.String("home", "", "AMPLS data directory")
+	home := fs.String("home", "", "Apnoro data directory")
 	_ = fs.Parse(os.Args[2:])
 
 	var err error
@@ -60,7 +60,7 @@ func main() {
 		usage()
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "ampls-helper:", err)
+		fmt.Fprintln(os.Stderr, "apnoro-helper:", err)
 		os.Exit(1)
 	}
 }
@@ -134,7 +134,7 @@ func install(home string) error {
 	if err := s.Start(); err != nil && !errors.Is(err, windows.ERROR_SERVICE_ALREADY_RUNNING) {
 		return fmt.Errorf("start service: %w", err)
 	}
-	fmt.Println("AMPLS Helper service installed and started.")
+	fmt.Println("Apnoro Helper service installed and started.")
 	return nil
 }
 
@@ -167,12 +167,12 @@ func uninstall() error {
 	if err := s.Delete(); err != nil && !errors.Is(err, windows.ERROR_SERVICE_MARKED_FOR_DELETE) {
 		return fmt.Errorf("delete service: %w", err)
 	}
-	fmt.Println("AMPLS Helper service removed.")
+	fmt.Println("Apnoro Helper service removed.")
 	return nil
 }
 
-// setupLog writes ampls-helper.log next to the service binary (the admin-only
-// install dir, e.g. C:\Program Files\AMPLS\bin). Not %ProgramData%\AMPLS:
+// setupLog writes apnoro-helper.log next to the service binary (the admin-only
+// install dir, e.g. C:\Program Files\Apnoro\bin). Not %ProgramData%\Apnoro:
 // any user can pre-create that folder (ProgramData grants Users "create
 // folders") and plant a link there, turning our LocalSystem log writes and the
 // .old rename into an arbitrary-file write. If the binary's own directory were
@@ -182,7 +182,7 @@ func setupLog() {
 	if err != nil {
 		return
 	}
-	p := filepath.Join(filepath.Dir(exe), "ampls-helper.log")
+	p := filepath.Join(filepath.Dir(exe), "apnoro-helper.log")
 	if st, err := os.Lstat(p); err == nil {
 		if !st.Mode().IsRegular() {
 			return // never follow a link
@@ -247,6 +247,6 @@ func run(home string) error {
 	// Interactive debugging: foreground until Ctrl+C.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	log.Printf("ampls-helper running in foreground (home %s); Ctrl+C to stop", home)
+	log.Printf("apnoro-helper running in foreground (home %s); Ctrl+C to stop", home)
 	return hosts.RunHelperContext(ctx, home)
 }

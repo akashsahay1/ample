@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"ampls/internal/api"
+	"apnoro/internal/api"
 )
 
 const laravel11Env = "APP_NAME=Laravel\nAPP_ENV=local\nAPP_URL=http://localhost\n\nDB_CONNECTION=sqlite\n# DB_HOST=127.0.0.1\n# DB_PORT=3306\n# DB_DATABASE=laravel\n# DB_USERNAME=root\n# DB_PASSWORD=\n\nSESSION_DRIVER=database\n"
@@ -135,10 +135,10 @@ func TestCreateBlankAndValidation(t *testing.T) {
 	}
 }
 
-// Live network test: AMPLS_LIVE_TESTS=1 go test ./internal/projects -run Live
+// Live network test: APNORO_LIVE_TESTS=1 go test ./internal/projects -run Live
 func TestLiveWordPress(t *testing.T) {
-	if os.Getenv("AMPLS_LIVE_TESTS") != "1" {
-		t.Skip("set AMPLS_LIVE_TESTS=1")
+	if os.Getenv("APNORO_LIVE_TESTS") != "1" {
+		t.Skip("set APNORO_LIVE_TESTS=1")
 	}
 	dir := t.TempDir()
 	last := 0.0
@@ -165,11 +165,11 @@ func TestLiveWordPress(t *testing.T) {
 	}
 }
 
-// Live Laravel test: needs AMPLS_TEST_PHP (php.exe) and AMPLS_TEST_COMPOSER (composer.phar).
+// Live Laravel test: needs APNORO_TEST_PHP (php.exe) and APNORO_TEST_COMPOSER (composer.phar).
 func TestLiveLaravel(t *testing.T) {
-	php, composer := os.Getenv("AMPLS_TEST_PHP"), os.Getenv("AMPLS_TEST_COMPOSER")
+	php, composer := os.Getenv("APNORO_TEST_PHP"), os.Getenv("APNORO_TEST_COMPOSER")
 	if php == "" || composer == "" {
-		t.Skip("set AMPLS_TEST_PHP and AMPLS_TEST_COMPOSER")
+		t.Skip("set APNORO_TEST_PHP and APNORO_TEST_COMPOSER")
 	}
 	dir := t.TempDir()
 	p, err := Create(context.Background(), Request{Kind: api.KindLaravel, Name: "lara", Dir: dir, PHP: php, ComposerPhar: composer}, func(msg string, pct float64) { t.Log(msg) })

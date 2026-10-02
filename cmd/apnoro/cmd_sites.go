@@ -10,8 +10,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"ampls/internal/api"
-	"ampls/internal/sites"
+	"apnoro/internal/api"
+	"apnoro/internal/sites"
 )
 
 func addSiteCommands(root *cobra.Command) {
@@ -20,7 +20,7 @@ func addSiteCommands(root *cobra.Command) {
 			Use:     "sites",
 			Aliases: []string{"links"},
 			Short:   "List all sites",
-			Long:    "List every site served by AMPLS (parked folders and links).\nSites pinned to a PHP version are marked with *.\n\nExample:\n  ampls sites",
+			Long:    "List every site served by Apnoro (parked folders and links).\nSites pinned to a PHP version are marked with *.\n\nExample:\n  apnoro sites",
 			GroupID: "sites",
 			Args:    cobra.NoArgs,
 			RunE:    runSites,
@@ -28,7 +28,7 @@ func addSiteCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "park [dir]",
 			Short:   "Serve every folder inside a directory as <folder>.test",
-			Long:    "Park a directory: each sub-folder becomes a site named after the folder.\nDefaults to the current directory.\n\nExamples:\n  ampls park\n  ampls park D:\\Code",
+			Long:    "Park a directory: each sub-folder becomes a site named after the folder.\nDefaults to the current directory.\n\nExamples:\n  apnoro park\n  apnoro park D:\\Code",
 			GroupID: "sites",
 			Args:    cobra.MaximumNArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -46,7 +46,7 @@ func addSiteCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "unpark [dir]",
 			Short:   "Stop serving a parked directory",
-			Long:    "Remove a directory from the parked list. Defaults to the current directory.\n\nExamples:\n  ampls unpark\n  ampls unpark D:\\Code",
+			Long:    "Remove a directory from the parked list. Defaults to the current directory.\n\nExamples:\n  apnoro unpark\n  apnoro unpark D:\\Code",
 			GroupID: "sites",
 			Args:    cobra.MaximumNArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -65,7 +65,7 @@ func addSiteCommands(root *cobra.Command) {
 					}
 				}
 				if !found {
-					return fmt.Errorf("%s is not parked (see `ampls parked`)", dir)
+					return fmt.Errorf("%s is not parked (see `apnoro parked`)", dir)
 				}
 				if err := backend().Unpark(dir); err != nil {
 					return err
@@ -77,7 +77,7 @@ func addSiteCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "parked",
 			Short:   "List parked directories",
-			Long:    "List the parked directories.\n\nExample:\n  ampls parked",
+			Long:    "List the parked directories.\n\nExample:\n  apnoro parked",
 			GroupID: "sites",
 			Args:    cobra.NoArgs,
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -86,7 +86,7 @@ func addSiteCommands(root *cobra.Command) {
 					return err
 				}
 				if len(cfg.Parked) == 0 {
-					fmt.Println("No parked directories. Park one with `ampls park <dir>`.")
+					fmt.Println("No parked directories. Park one with `apnoro park <dir>`.")
 					return nil
 				}
 				for _, p := range cfg.Parked {
@@ -98,7 +98,7 @@ func addSiteCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "link [name]",
 			Short:   "Serve the current directory as <name>.test",
-			Long:    "Link the current directory as a site. The name defaults to the folder name\n(lowercased, spaces replaced by dashes).\n\nExamples:\n  ampls link\n  ampls link api",
+			Long:    "Link the current directory as a site. The name defaults to the folder name\n(lowercased, spaces replaced by dashes).\n\nExamples:\n  apnoro link\n  apnoro link api",
 			GroupID: "sites",
 			Args:    cobra.MaximumNArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -124,7 +124,7 @@ func addSiteCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "unlink [name]",
 			Short:   "Remove a linked site",
-			Long:    "Remove a linked site. Defaults to the site for the current directory.\n\nExamples:\n  ampls unlink\n  ampls unlink api",
+			Long:    "Remove a linked site. Defaults to the site for the current directory.\n\nExamples:\n  apnoro unlink\n  apnoro unlink api",
 			GroupID: "sites",
 			Args:    cobra.MaximumNArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -135,7 +135,7 @@ func addSiteCommands(root *cobra.Command) {
 						return err
 					}
 					if !s.Linked {
-						return fmt.Errorf("%s is served from a parked directory, not a link; use `ampls unpark` on its parent", s.Domain)
+						return fmt.Errorf("%s is served from a parked directory, not a link; use `apnoro unpark` on its parent", s.Domain)
 					}
 					name = s.Name
 				}
@@ -150,7 +150,7 @@ func addSiteCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "unisolate [site]",
 			Short:   "Make a site follow the default PHP version again",
-			Long:    "Remove a site's pinned PHP version. Defaults to the site for the current directory.\n\nExamples:\n  ampls unisolate\n  ampls unisolate blog",
+			Long:    "Remove a site's pinned PHP version. Defaults to the site for the current directory.\n\nExamples:\n  apnoro unisolate\n  apnoro unisolate blog",
 			GroupID: "sites",
 			Args:    cobra.MaximumNArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -170,7 +170,7 @@ func addSiteCommands(root *cobra.Command) {
 		&cobra.Command{
 			Use:     "open [site]",
 			Short:   "Open a site in the browser",
-			Long:    "Open a site in the default browser. Defaults to the site for the current directory.\n\nExamples:\n  ampls open\n  ampls open blog",
+			Long:    "Open a site in the default browser. Defaults to the site for the current directory.\n\nExamples:\n  apnoro open\n  apnoro open blog",
 			GroupID: "sites",
 			Args:    cobra.MaximumNArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
@@ -192,7 +192,7 @@ func runSites(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if len(ss) == 0 {
-		fmt.Println("No sites yet. Park a directory (`ampls park`) or link a folder (`ampls link`).")
+		fmt.Println("No sites yet. Park a directory (`apnoro park`) or link a folder (`apnoro link`).")
 		return nil
 	}
 	w := newTable()
@@ -223,8 +223,8 @@ func isolateCmd() *cobra.Command {
 		Long: `Pin the site containing the current directory (or --site) to a PHP version.
 
 Examples:
-  ampls isolate 8.2
-  ampls isolate 7.4 --site legacy`,
+  apnoro isolate 8.2
+  apnoro isolate 7.4 --site legacy`,
 		GroupID: "sites",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -246,10 +246,10 @@ Examples:
 
 func secureCmd(secure bool) *cobra.Command {
 	use, short, long := "secure [site]", "Serve a site over HTTPS",
-		"Serve a site over HTTPS with a certificate from the local AMPLS CA.\nDefaults to the site for the current directory.\n\nExamples:\n  ampls secure\n  ampls secure blog"
+		"Serve a site over HTTPS with a certificate from the local Apnoro CA.\nDefaults to the site for the current directory.\n\nExamples:\n  apnoro secure\n  apnoro secure blog"
 	if !secure {
 		use, short, long = "unsecure [site]", "Serve a site over plain HTTP",
-			"Stop serving a site over HTTPS. Defaults to the site for the current directory.\n\nExamples:\n  ampls unsecure\n  ampls unsecure blog"
+			"Stop serving a site over HTTPS. Defaults to the site for the current directory.\n\nExamples:\n  apnoro unsecure\n  apnoro unsecure blog"
 	}
 	return &cobra.Command{
 		Use:     use,
@@ -268,7 +268,7 @@ func secureCmd(secure bool) *cobra.Command {
 			if secure {
 				ok("https://%s is secured", s.Domain)
 				if o, err := backend().Overview(); err == nil && !o.CATrusted {
-					warn("the AMPLS certificate authority is not trusted yet; run `ampls trust`")
+					warn("the Apnoro certificate authority is not trusted yet; run `apnoro trust`")
 				}
 			} else {
 				ok("http://%s is no longer secured", s.Domain)
@@ -294,9 +294,9 @@ With --db a MySQL database named after the project is created and wired
 into .env / wp-config.php.
 
 Examples:
-  ampls new laravel shop --db
-  ampls new wordpress blog --db --php 8.3
-  ampls new blank sandbox --dir D:\Code`,
+  apnoro new laravel shop --db
+  apnoro new wordpress blog --db --php 8.3
+  apnoro new blank sandbox --dir D:\Code`,
 		GroupID:   "sites",
 		Args:      cobra.ExactArgs(2),
 		ValidArgs: []string{api.KindLaravel, api.KindWordPress, api.KindBlank},

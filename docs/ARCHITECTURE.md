@@ -1,18 +1,18 @@
 # Architecture
 
-AMPLS is a Go module (`ampls`, Go 1.25+) with a Wails v2 + React/TypeScript GUI. Four executables share the same internal packages:
+Apnoro is a Go module (`apnoro`, Go 1.25+) with a Wails v2 + React/TypeScript GUI. Four executables share the same internal packages:
 
 | Executable | Role |
 |---|---|
-| `AMPLS.exe` | Wails desktop app with tray (`main.go`, `app.go`, `frontend/`) |
-| `bin\ampls.exe` | Cobra CLI (`cmd/ampls`) |
+| `Apnoro.exe` | Wails desktop app with tray (`main.go`, `app.go`, `frontend/`) |
+| `bin\apnoro.exe` | Cobra CLI (`cmd/apnoro`) |
 | `bin\php.exe` | `php` shim that picks a PHP version and execs the real one (`cmd/php-shim`) |
-| `bin\ampls-helper.exe` | Windows service that edits the hosts file (`cmd/ampls-helper`) |
+| `bin\apnoro-helper.exe` | Windows service that edits the hosts file (`cmd/apnoro-helper`) |
 
 ## Overview
 
 ```
- GUI (Wails)        CLI (ampls)        php shim
+ GUI (Wails)        CLI (apnoro)        php shim
       \                 |                 |
        \                |                 v
         +---> api.Backend <--- internal/core       internal/shim
@@ -26,8 +26,8 @@ AMPLS is a Go module (`ampls`, Go 1.25+) with a Wails v2 + React/TypeScript GUI.
    |          v            v
    |     services (detached procs + pid files)
    v
- hosts.Request --> run/hosts.json --> ampls-helper (LocalSystem) --> hosts file
-                                           ^ fallback: UAC `ampls hosts apply`
+ hosts.Request --> run/hosts.json --> apnoro-helper (LocalSystem) --> hosts file
+                                           ^ fallback: UAC `apnoro hosts apply`
 
  Browser --> Apache :80/:443 (127.0.0.1)
                `-- mod_fcgid --> php\<minor>\php-cgi.exe  (per vhost)
@@ -36,7 +36,7 @@ AMPLS is a Go module (`ampls`, Go 1.25+) with a Wails v2 + React/TypeScript GUI.
 
 ## Layers
 
-- **`internal/api`**: the `Backend` interface and DTOs shared by GUI and CLI. `internal/core` implements it by orchestrating the packages below; a mock backend (`AMPLS_MOCK=1`) drives frontend development.
+- **`internal/api`**: the `Backend` interface and DTOs shared by GUI and CLI. `internal/core` implements it by orchestrating the packages below; a mock backend (`APNORO_MOCK=1`) drives frontend development.
 - **`internal/paths`**: every filesystem location. **`internal/config`**: `config.json` in the data dir (ports, TLD, parked dirs, links, per-site overrides, MySQL root password, app settings).
 - **`internal/sites`**: discovers sites from parked directories and links, applies overrides, detects framework and docroot (`public\`, `web\`).
 - **`internal/apache`**: renders `conf\httpd.conf` and one `conf\sites\*.conf` per site; validates with `httpd -t`.
@@ -52,9 +52,9 @@ AMPLS is a Go module (`ampls`, Go 1.25+) with a Wails v2 + React/TypeScript GUI.
 
 - **Detached services.** Apache and MySQL are started as hidden background processes with stdout/stderr redirected to `logs\`, and their PIDs are written to `run\<name>.pid`. They outlive the CLI and the GUI. Stopping tries a graceful path first (MySQL `SHUTDOWN` over SQL), then kills the whole process tree. Status is the pid file plus a liveness check.
 - **Per-site PHP.** Each vhost's `<Directory>` gets `FcgidWrapper "<Home>/php/<minor>/php-cgi.exe" .php`. php-cgi reads the `php.ini` next to it. Changing a site's version regenerates that vhost and restarts Apache. `localhost` and phpMyAdmin use the default PHP.
-- **Hosts helper.** Writing the hosts file needs admin. The installer registers `AMPLSHelper` (LocalSystem). Unprivileged callers write the desired domains to `run\hosts.json` (`hosts.Request`); the helper watches that file, validates every domain (`<label>.<tld>` or `sub.<label>.<tld>`, strict charset), rewrites only the block between `# BEGIN AMPLS` and `# END AMPLS` (127.0.0.1 and ::1 lines), and records the result in `run\hosts.applied.json`. If the helper does not answer within about 5 seconds, AMPLS falls back to a UAC-elevated `ampls.exe hosts apply`.
-- **`php` shim.** Resolves the version (nearest `.ampls-php`, containing site's override, default, newest installed) using only local files, then runs `<Home>\php\<minor>\php.exe` with the same arguments, stdio and exit code.
-- **Two roots.** Install dir (programs, read-only at runtime, contains `data-dir.txt`) and the user-chosen data dir (`paths.Home()`: `$AMPLS_HOME`, else `data-dir.txt`, else `C:\AMPLS`).
+- **Hosts helper.** Writing the hosts file needs admin. The installer registers `ApnoroHelper` (LocalSystem). Unprivileged callers write the desired domains to `run\hosts.json` (`hosts.Request`); the helper watches that file, validates every domain (`<label>.<tld>` or `sub.<label>.<tld>`, strict charset), rewrites only the block between `# BEGIN APNORO` and `# END APNORO` (127.0.0.1 and ::1 lines), and records the result in `run\hosts.applied.json`. If the helper does not answer within about 5 seconds, Apnoro falls back to a UAC-elevated `apnoro.exe hosts apply`.
+- **`php` shim.** Resolves the version (nearest `.apnoro-php`, containing site's override, default, newest installed) using only local files, then runs `<Home>\php\<minor>\php.exe` with the same arguments, stdio and exit code.
+- **Two roots.** Install dir (programs, read-only at runtime, contains `data-dir.txt`) and the user-chosen data dir (`paths.Home()`: `$APNORO_HOME`, else `data-dir.txt`, else `C:\Apnoro`).
 
 ## Security notes
 
@@ -68,7 +68,7 @@ AMPLS is a Go module (`ampls`, Go 1.25+) with a Wails v2 + React/TypeScript GUI.
 
 OS-specific code is isolated in `*_windows.go` / `*_darwin.go` files with `//go:build !windows` fallbacks, no cgo, so `GOOS=darwin go build ./...` compiles today. Planned macOS differences:
 
-- Data dir `~/Library/Application Support/AMPLS`; `.dmg` packaging and signing.
+- Data dir `~/Library/Application Support/Apnoro`; `.dmg` packaging and signing.
 - Hosts changes via a privileged helper (launchd daemon) or resolver file instead of the Windows service.
 - Trust via `security add-trusted-cert` into the keychain.
 - Runtimes from macOS builds of Apache/PHP/MySQL rather than Windows zips; fcgi wrapper for PHP.
