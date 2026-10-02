@@ -101,6 +101,23 @@ h1 { font: 800 clamp(36px, 5.4vw, 60px)/1.05 var(--display); letter-spacing: -0.
 .terminal .c { color: #7d879f; }
 .terminal .p { color: #7aa2ff; }
 
+/* ---------- roadmap */
+.roadmap { padding: 64px 0 8px; }
+.section-lede { margin: -14px 0 24px; font-size: 15px; }
+.lanes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.lane { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+.lane h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font: 700 17px var(--display); }
+.lane ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.lane li { position: relative; padding-left: 20px; font-size: 15px; color: var(--ink-2); }
+.lane li::before { content: ""; position: absolute; left: 2px; top: 9px; width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.lane:first-child li::before { background: #3fb57a; }
+.lane:nth-child(2) li::before { background: var(--accent); }
+.lane:nth-child(3) li::before { background: var(--violet); }
+.pill { font: 600 11px var(--body); text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.pill-done { color: #1c6e45; background: #e3f3ea; }
+.pill-next { color: #1d4fd8; background: #e6eeff; }
+.pill-later { color: #5b2bbf; background: #efe8ff; }
+
 /* ---------- releases table */
 .releases { padding: 64px 0 88px; }
 .table-wrap { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow-x: auto; }
@@ -124,7 +141,7 @@ td:last-child { text-align: right; }
   .hero-art { order: -1; justify-content: flex-start; }
   .hero-art img { width: 120px; }
   .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .grid { grid-template-columns: 1fr; }
+  .grid, .lanes { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
   .nav nav a:not([href="#download"]) { display: none; }

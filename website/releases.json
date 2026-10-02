@@ -1,15 +1,15 @@
 {
-    "product":  "AMPLS",
+    "product":  "Apnoro",
     "latest":  "1.0.0",
-    "updated":  "2026-10-01T10:09:59Z",
+    "updated":  "2026-10-02T08:14:22Z",
     "releases":  [
                      {
                          "version":  "1.0.0",
-                         "build":  19,
-                         "date":  "2026-10-01",
-                         "file":  "uploads/1.0.0/AMPLS-Setup-1.0.0.exe",
-                         "size":  83344150,
-                         "sha256":  "cdcf58b098c1e6f6c9b4a20177de36fd261485ca5ed5dce3994a27ec34c961a9",
+                         "build":  23,
+                         "date":  "2026-10-02",
+                         "file":  "uploads/1.0.0/Apnoro-Setup-1.0.0.exe",
+                         "size":  83714644,
+                         "sha256":  "c13d02279858c698ac28f4c78eda9840d565ce224359621f414c0f4b363ee446",
                          "components":  {
                                             "apache":  "2.4.68",
                                             "mod_fcgid":  "2.3.10",

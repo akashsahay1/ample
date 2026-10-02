@@ -96,6 +96,7 @@ MySQL: user `root`, **empty password**, host `127.0.0.1`, port `3306`. MySQL bin
 
 ## Roadmap
 
+- Code-signed installer (no SmartScreen warning)
 - macOS `.dmg` (signed build)
 - Node version manager
 - Mail catcher

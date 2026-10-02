@@ -169,17 +169,17 @@ end;
 { Silently uninstall AMPLS, keeping its data: its "delete the data folder?" prompt
   defaults to No, which /SUPPRESSMSGBOXES answers. It stops its services, removes
   its helper service, hosts block, certificate and PATH entries. }
-procedure RemoveLegacyAMPLS;
+procedure RemoveLegacyInstall;
 var
   U: string;
   Code, Waited: Integer;
 begin
   if not RegQueryStringValue(HKLM, LegacyUninstKey, 'UninstallString', U) then exit;
-  WizardForm.StatusLabel.Caption := 'Migrating from AMPLS (your sites and databases are kept)...';
-  Log('Uninstalling AMPLS: ' + U);
+  WizardForm.StatusLabel.Caption := 'Migrating your previous installation (your sites and databases are kept)...';
+  Log('Uninstalling the previous installation: ' + U);
   if not Exec(RemoveQuotes(U), '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART', '', SW_HIDE, ewWaitUntilTerminated, Code) then
   begin
-    Log('Could not start the AMPLS uninstaller');
+    Log('Could not start the previous uninstaller');
     exit;
   end;
   { the Inno uninstaller relaunches itself from %TEMP%, so wait for its entry to go }
@@ -189,7 +189,7 @@ begin
     Sleep(500);
     Waited := Waited + 500;
   end;
-  Log(Format('AMPLS uninstall finished (code %d, waited %d ms, still registered: %d)', [Code, Waited, Ord(LegacyInstalled)]));
+  Log(Format('Previous installation removed (code %d, waited %d ms, still registered: %d)', [Code, Waited, Ord(LegacyInstalled)]));
 end;
 
 { ---------- data dir ---------- }
@@ -453,7 +453,7 @@ begin
   Exec(ExpandConstant('{sys}\sc.exe'), 'stop {#HelperService}', '', SW_HIDE, ewWaitUntilTerminated, Code);
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM {#AppExe}', '', SW_HIDE, ewWaitUntilTerminated, Code);
   if LegacyInstalled then
-    RemoveLegacyAMPLS;
+    RemoveLegacyInstall;
 end;
 
 function SetupFlags: string;

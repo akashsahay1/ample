@@ -1,6 +1,6 @@
 # Apnoro — engineering contracts
 
-Apnoro (formerly AMPLS): Apache, PHP and MySQL for Windows. A Windows-first (macOS later) local PHP dev
+Apnoro: Apache, PHP and MySQL for Windows. A Windows-first (macOS later) local PHP dev
 environment: XAMPP-style bundled stack + Laravel Herd-style per-project PHP versions.
 
 Go module: `apnoro` (Go 1.25+). GUI: Wails v2 + React/TS/Tailwind in `frontend/`.
